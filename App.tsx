@@ -171,10 +171,29 @@ const App: React.FC = () => {
     const randomIndex = Math.floor(Math.random() * available.length);
     const newBall = available[randomIndex];
 
+    // Generate Logs based on hits
+    const time = new Date().toLocaleTimeString();
+    const newLogs: string[] = [];
+    let hitFound = false;
+
+    participants.forEach(p => {
+      p.cards.forEach(c => {
+        if (c.numbers.includes(newBall)) {
+          hitFound = true;
+          newLogs.push(`${time}: ${p.name} ${p.surname} marcó ${newBall} en ${c.id}`);
+        }
+      });
+    });
+
+    // If no one had the ball, show generic message
+    if (!hitFound) {
+      newLogs.push(`${time}: Bolilla N° ${newBall} salió`);
+    }
+
     setGameState(prev => ({
       ...prev,
       drawnBalls: [...prev.drawnBalls, newBall],
-      history: [...prev.history, `${new Date().toLocaleTimeString()}: Bola ${newBall}`]
+      history: [...prev.history, ...newLogs]
     }));
 
     // Check winners immediately
@@ -322,7 +341,7 @@ const App: React.FC = () => {
         </section>
 
         {/* Center: Game */}
-        <section className="h-[calc(100vh-140px)] xl:h-auto min-h-[600px]">
+        <section className="h-auto min-h-[500px]">
           <GamePanel 
             drawnBalls={gameState.drawnBalls}
             onDrawBall={handleDrawBall}

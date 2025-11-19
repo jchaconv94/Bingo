@@ -102,7 +102,7 @@ const GamePanel: React.FC<Props> = ({ drawnBalls, onDrawBall, onReset, historyLo
       {/* Recent Balls & History Split */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
         {/* Board of drawn numbers */}
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-sm flex flex-col h-[320px]">
+        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-sm flex flex-col h-64 sm:h-80">
           <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
             <Hash size={16} /> Tablero de control
           </h3>
@@ -129,7 +129,7 @@ const GamePanel: React.FC<Props> = ({ drawnBalls, onDrawBall, onReset, historyLo
         </div>
 
         {/* Text Log */}
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-sm flex flex-col h-[320px]">
+        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-sm flex flex-col h-64 sm:h-80">
           <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
             <History size={16} /> Historial
           </h3>

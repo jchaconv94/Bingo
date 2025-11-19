@@ -1,11 +1,4 @@
 {
-  "scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "preview": "vite preview",
-  "start": "node index.js"
-},
-
   "name": "bingo-virtual",
   "private": true,
   "version": "1.0.0",
