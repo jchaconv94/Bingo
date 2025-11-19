@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { Search, Users, Medal, Ticket, Edit2, Trash2, Save, X, Eye, EyeOff, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Users, Medal, Ticket, Edit2, Trash2, Save, X, Eye, EyeOff, CreditCard, ChevronDown, ChevronUp, ScanEye, Phone, Fingerprint } from 'lucide-react';
 import { Participant, Winner, BingoCard as BingoCardType, PatternKey } from '../types.ts';
 import BingoCard from './BingoCard.tsx';
 import WinnerDetailsModal from './WinnerDetailsModal.tsx';
+import ParticipantDetailsModal from './ParticipantDetailsModal.tsx';
 
 interface Props {
   participants: Participant[];
@@ -38,12 +39,21 @@ const ParticipantsPanel: React.FC<Props> = ({
   // Individual visibility overrides (id -> boolean)
   const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
   
-  // State to control the details modal
+  // State to control the details modal for WINNERS
   const [viewingWinnerData, setViewingWinnerData] = useState<{
     winner: Winner;
     participant: Participant;
     card: BingoCardType;
   } | null>(null);
+
+  // State to control the details modal for PARTICIPANTS
+  // CHANGED: Now we store the ID, not the object, to ensure we always pull the latest data from props
+  const [viewingParticipantId, setViewingParticipantId] = useState<string | null>(null);
+
+  // Derive the active participant object from the fresh list
+  const viewingParticipant = viewingParticipantId 
+    ? participants.find(p => p.id === viewingParticipantId) || null
+    : null;
 
   // Defensive filtering: convert fields to String before checking to prevent crashes if data is null/number
   const filteredParticipants = participants.filter(p => {
@@ -110,6 +120,26 @@ const ParticipantsPanel: React.FC<Props> = ({
           drawnBalls={drawnBalls}
           onClose={() => setViewingWinnerData(null)}
           currentPattern={currentPattern}
+        />
+      )}
+
+      {viewingParticipant && (
+        <ParticipantDetailsModal 
+          participant={viewingParticipant}
+          drawnBalls={drawnBalls}
+          onClose={() => setViewingParticipantId(null)}
+          currentPattern={currentPattern}
+          onAddCard={() => onAddCard(viewingParticipant.id)}
+          onSave={(data) => {
+             onEditParticipant(viewingParticipant.id, data);
+             // We don't close the modal, allowing the user to see their changes
+          }}
+          onDelete={() => {
+            if (window.confirm(`¿Estás seguro de eliminar a ${viewingParticipant.name}?`)) {
+               onDeleteParticipant(viewingParticipant.id);
+               setViewingParticipantId(null); // Close modal as participant is gone
+            }
+          }}
         />
       )}
 
@@ -187,28 +217,31 @@ const ParticipantsPanel: React.FC<Props> = ({
           {filteredParticipants.map(p => {
              // Determine visibility: Override exists ? use Override : use Global
              const isExpanded = expandedStates[p.id] !== undefined ? expandedStates[p.id] : showCardsGlobal;
+             const isEditing = editingId === p.id;
              
              return (
-              <div key={p.id} className="bg-slate-950/50 rounded-xl p-4 border border-slate-800/50 hover:border-slate-700 transition-colors group">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-emerald-900/20 flex-shrink-0">
+              <div key={p.id} className="bg-slate-950/50 rounded-xl border border-slate-800/50 overflow-hidden hover:border-slate-700 transition-all group flex flex-col">
+                
+                {/* Card Body: Avatar & Info */}
+                <div className="p-4 flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-emerald-900/20 flex-shrink-0">
                     {String(p.name || '?').charAt(0).toUpperCase()}
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    {editingId === p.id ? (
-                      <div className="space-y-2">
+                    {isEditing ? (
+                      <div className="space-y-2 animate-in fade-in duration-200">
                         <div className="grid grid-cols-2 gap-2">
                           <input 
                             value={editForm.name} 
                             onChange={e => setEditForm({...editForm, name: e.target.value})}
-                            className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white w-full"
+                            className="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white w-full focus:border-cyan-500 outline-none"
                             placeholder="Nombre"
                           />
                           <input 
                             value={editForm.surname} 
                             onChange={e => setEditForm({...editForm, surname: e.target.value})}
-                            className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white w-full"
+                            className="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white w-full focus:border-cyan-500 outline-none"
                             placeholder="Apellido"
                           />
                         </div>
@@ -216,77 +249,104 @@ const ParticipantsPanel: React.FC<Props> = ({
                           <input 
                             value={editForm.dni} 
                             onChange={e => setEditForm({...editForm, dni: e.target.value})}
-                            className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white w-full"
+                            className="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white w-full focus:border-cyan-500 outline-none"
                             placeholder="DNI"
                           />
                           <input 
                             value={editForm.phone} 
                             onChange={e => setEditForm({...editForm, phone: e.target.value})}
-                            className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white w-full"
+                            className="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white w-full focus:border-cyan-500 outline-none"
                             placeholder="Teléfono"
                           />
                         </div>
                         <div className="flex gap-2 justify-end pt-1">
-                          <button onClick={saveEdit} className="flex items-center gap-1 px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs transition-colors">
+                          <button onClick={saveEdit} className="flex items-center gap-1 px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors">
                             <Save size={12} /> Guardar
                           </button>
-                          <button onClick={cancelEdit} className="flex items-center gap-1 px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-xs transition-colors">
+                          <button onClick={cancelEdit} className="flex items-center gap-1 px-3 py-1.5 rounded bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition-colors">
                             <X size={12} /> Cancelar
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="min-w-0 flex-1">
-                          <h3 
-                            className={`font-semibold text-slate-200 truncate group-hover:text-cyan-400 transition-colors ${hideParticipants ? 'blur-sm select-none' : ''}`}
-                            title={`${p.name} ${p.surname}`}
-                          >
-                            {p.name} {p.surname}
-                          </h3>
-                          <p className={`text-xs text-slate-500 truncate ${hideParticipants ? 'blur-sm select-none' : ''}`}>
-                            DNI: {p.dni} {p.phone && `• ${p.phone}`}
-                          </p>
-                        </div>
-                        
-                        <div className="flex gap-1 items-start flex-shrink-0">
-                           <button 
-                            onClick={() => toggleIndividualCard(p.id)}
-                            className="p-1.5 text-slate-500 hover:text-white hover:bg-slate-700 rounded transition-colors mr-1"
-                            title={isExpanded ? "Ocultar cartones" : "Mostrar cartones"}
-                          >
-                            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                          </button>
-
-                          <button 
-                            onClick={() => startEdit(p)}
-                            className="p-1.5 text-slate-500 hover:text-cyan-400 hover:bg-cyan-950/30 rounded transition-colors"
-                            title="Editar datos"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button 
-                            onClick={() => onDeleteParticipant(p.id)}
-                            className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-950/30 rounded transition-colors"
-                            title="Eliminar participante"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                          <button 
-                            onClick={() => onAddCard(p.id)}
-                            className="ml-1 text-xs bg-slate-800 hover:bg-slate-700 text-emerald-400 px-2 py-1.5 rounded border border-slate-700 transition-colors flex items-center gap-1"
-                            title="Agregar cartón extra"
-                          >
-                            <Ticket size={12} /> +1
-                          </button>
+                      <div className="flex flex-col justify-center h-full">
+                        <h3 
+                          className={`text-lg font-bold text-slate-200 truncate group-hover:text-cyan-400 transition-colors mb-1 ${hideParticipants ? 'blur-sm select-none' : ''}`}
+                          title={`${p.name} ${p.surname}`}
+                        >
+                          {p.name} {p.surname}
+                        </h3>
+                        <div className={`flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 ${hideParticipants ? 'blur-sm select-none' : ''}`}>
+                          <span className="flex items-center gap-1.5" title="DNI"><Fingerprint size={12} className="text-slate-600"/> {p.dni}</span>
+                          {p.phone && <span className="flex items-center gap-1.5" title="Teléfono"><Phone size={12} className="text-slate-600"/> {p.phone}</span>}
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
                 
-                {isExpanded ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in slide-in-from-top-1 duration-200">
+                {/* Card Footer: Actions Toolbar (Only show if not editing inline) */}
+                {!isEditing && (
+                  <div className="bg-slate-900/30 border-t border-slate-800/50 px-4 py-2 flex items-center justify-between gap-4">
+                    
+                    <button 
+                      onClick={() => toggleIndividualCard(p.id)}
+                      className={`
+                        text-xs font-medium px-3 py-1.5 rounded-lg transition-all flex items-center gap-2
+                        ${isExpanded 
+                          ? 'bg-slate-800 text-slate-200 shadow-inner' 
+                          : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'
+                        }
+                      `}
+                      title={isExpanded ? "Ocultar cartones" : "Mostrar cartones"}
+                    >
+                      {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      <span>{p.cards.length} Cartones</span>
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                       <button 
+                        onClick={() => setViewingParticipantId(p.id)}
+                        className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/30 rounded-lg transition-colors"
+                        title="Ver detalles completos"
+                      >
+                        <ScanEye size={16} />
+                      </button>
+
+                      <button 
+                        onClick={() => startEdit(p)}
+                        className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/30 rounded-lg transition-colors"
+                        title="Edición rápida"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      
+                      <button 
+                        onClick={() => onDeleteParticipant(p.id)}
+                        className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition-colors"
+                        title="Eliminar participante"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+
+                      <div className="w-px h-5 bg-slate-800 mx-1.5"></div>
+
+                      <button 
+                        onClick={() => onAddCard(p.id)}
+                        className="flex items-center gap-1 pl-2 pr-3 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-950/50 text-emerald-500 hover:text-emerald-400 border border-slate-700/50 hover:border-emerald-500/30 transition-all shadow-sm"
+                        title="Agregar cartón extra"
+                      >
+                        <Ticket size={14} /> 
+                        <span className="text-xs font-bold">+1</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Expanded Cards Section */}
+                {isExpanded && (
+                  <div className="p-4 pt-0 mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in slide-in-from-top-1 duration-200 border-t border-slate-800/50 bg-slate-950/30">
+                    <div className="col-span-full h-2"></div> {/* Spacer */}
                     {p.cards.map(card => (
                       <BingoCard 
                         key={card.id}
@@ -298,17 +358,6 @@ const ParticipantsPanel: React.FC<Props> = ({
                         currentPattern={currentPattern}
                       />
                     ))}
-                  </div>
-                ) : (
-                  <div className="pl-[52px] flex items-center gap-2 animate-in fade-in duration-200">
-                    <button 
-                      onClick={() => toggleIndividualCard(p.id)}
-                      className="text-xs text-slate-500 bg-slate-900/50 hover:bg-slate-800 hover:text-slate-300 px-2 py-1 rounded border border-slate-800 inline-flex items-center gap-2 transition-all"
-                      title="Click para desplegar"
-                    >
-                      <Ticket size={12} />
-                      {p.cards.length} cartón{p.cards.length !== 1 ? 'es' : ''} oculto{p.cards.length !== 1 ? 's' : ''}
-                    </button>
                   </div>
                 )}
               </div>

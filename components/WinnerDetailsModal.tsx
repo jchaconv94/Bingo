@@ -100,6 +100,7 @@ const WinnerDetailsModal: React.FC<Props> = ({ winner, participant, card, drawnB
                   onDownload={() => {}} // No action needed in view mode
                   isCompact={false}
                   currentPattern={currentPattern}
+                  readOnly={true}
                 />
               </div>
             </div>
