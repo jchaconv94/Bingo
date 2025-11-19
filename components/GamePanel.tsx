@@ -82,6 +82,15 @@ const GamePanel: React.FC<Props> = ({
 
   const isDrawDisabled = isAnimating || drawnBalls.length >= 75 || !hasParticipants;
 
+  // Configuración de las filas del tablero
+  const boardRows = [
+    { letter: 'B', min: 1, max: 15, color: 'text-cyan-400' },
+    { letter: 'I', min: 16, max: 30, color: 'text-red-400' },
+    { letter: 'N', min: 31, max: 45, color: 'text-white' },
+    { letter: 'G', min: 46, max: 60, color: 'text-green-400' },
+    { letter: 'O', min: 61, max: 75, color: 'text-amber-400' },
+  ];
+
   return (
     <div className="flex flex-col h-full gap-6 relative">
       
@@ -271,43 +280,57 @@ const GamePanel: React.FC<Props> = ({
       </div>
 
       {/* Recent Balls & History Split */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
-        {/* Board of drawn numbers */}
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-sm flex flex-col h-64 sm:h-80">
-          <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
+        
+        {/* Board of drawn numbers (Control Board) */}
+        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-sm flex flex-col h-fit lg:col-span-2 overflow-hidden">
+          <h3 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2 flex-shrink-0">
             <Hash size={16} /> Tablero de control
           </h3>
-          <div className="flex-1 flex flex-wrap content-start gap-1.5 overflow-y-auto pr-2 custom-scrollbar p-1">
-            {drawnBalls.slice().reverse().map((n, i) => (
-              <div 
-                key={i}
-                className={`
-                  w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 border-2
-                  ${i === 0 
-                    ? 'bg-amber-500 text-slate-900 border-amber-300 shadow-md shadow-amber-500/40' 
-                    : 'bg-slate-800 text-slate-300 border-slate-700'
-                  }
-                  animate-in fade-in zoom-in duration-300
-                `}
-              >
-                {n}
+          
+          <div className="flex flex-col gap-3 overflow-x-auto custom-scrollbar py-2">
+            {boardRows.map((row) => (
+              <div key={row.letter} className="flex items-center gap-3 flex-shrink-0 justify-center">
+                {/* Letra Vertical */}
+                <div className={`w-10 aspect-square flex items-center justify-center text-2xl font-black ${row.color} bg-slate-950/50 rounded border border-slate-800`}>
+                  {row.letter}
+                </div>
+                
+                {/* Números de la fila */}
+                <div className="flex-1 flex gap-1 justify-center">
+                  {Array.from({ length: 15 }, (_, i) => row.min + i).map(num => {
+                    const isDrawn = drawnBalls.includes(num);
+                    const isLast = lastBall === num;
+                    
+                    return (
+                      <div 
+                        key={num}
+                        className={`
+                          flex-1 aspect-square min-w-[24px] rounded-md flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-500 border
+                          ${isLast
+                            ? 'bg-amber-500 text-slate-900 border-amber-300 scale-110 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-10'
+                            : isDrawn 
+                              ? 'bg-gradient-to-b from-slate-700 to-slate-800 text-white border-slate-500 shadow-inner'
+                              : 'bg-transparent text-slate-700 border-slate-800/50'
+                          }
+                        `}
+                      >
+                        {num}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-
             ))}
-            {drawnBalls.length === 0 && (
-              <div className="w-full h-full flex items-center justify-center text-slate-600 text-sm italic">
-                Esperando inicio...
-              </div>
-            )}
           </div>
         </div>
 
         {/* Text Log */}
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-sm flex flex-col h-64 sm:h-80">
-          <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-sm flex flex-col h-80 lg:h-[32rem] xl:h-full overflow-hidden">
+          <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2 flex-shrink-0">
             <History size={16} /> Historial
           </h3>
-          <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar min-h-0">
             {historyLog.slice().reverse().map((log, i) => (
               <div key={i} className="text-xs text-slate-400 border-b border-slate-800/50 pb-1.5">
                 {log}

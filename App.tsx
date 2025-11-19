@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Participant, GameState, Winner, TOTAL_BALLS, NUMBERS_PER_CARD, BingoCard, PatternKey } from './types.ts';
@@ -294,7 +293,7 @@ const App: React.FC = () => {
     setGameState(prev => ({
       ...prev,
       drawnBalls: [],
-      history: [...prev.history, '--- RESETEO DEL SORTEO ---']
+      history: []
     }));
     setWinners([]);
     setCurrentBatchWinners([]);
@@ -376,6 +375,8 @@ const App: React.FC = () => {
           drawnBalls={gameState.drawnBalls}
           onClose={() => setViewingDetailsData(null)}
           currentPattern={gameState.selectedPattern}
+          onDeleteCard={handleDeleteCard}
+          onDownloadCard={handleDownloadCard}
         />
       )}
 
@@ -447,7 +448,7 @@ const App: React.FC = () => {
         )}
 
         {/* Center: Game */}
-        <section className="h-auto min-h-[500px]">
+        <section className="h-auto min-h-[500px] xl:h-[calc(100vh-155px)] flex flex-col xl:overflow-hidden">
           <GamePanel 
             drawnBalls={gameState.drawnBalls}
             onDrawBall={handleDrawBall}

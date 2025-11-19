@@ -11,9 +11,20 @@ interface Props {
   drawnBalls: number[];
   onClose: () => void;
   currentPattern?: PatternKey;
+  onDeleteCard: (participantId: string, cardId: string) => void;
+  onDownloadCard: (participant: Participant, cardId: string) => void;
 }
 
-const WinnerDetailsModal: React.FC<Props> = ({ winner, participant, card, drawnBalls, onClose, currentPattern = 'FULL' }) => {
+const WinnerDetailsModal: React.FC<Props> = ({ 
+  winner, 
+  participant, 
+  card, 
+  drawnBalls, 
+  onClose, 
+  currentPattern = 'FULL',
+  onDeleteCard,
+  onDownloadCard
+}) => {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
@@ -91,16 +102,15 @@ const WinnerDetailsModal: React.FC<Props> = ({ winner, participant, card, drawnB
             {/* Right: The Winning Card */}
             <div>
               <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Cartón Ganador</h3>
-              <div className="pointer-events-none"> 
-                {/* Pointer events none to prevent hovering effects/buttons interaction inside the preview */}
+              <div> 
                 <BingoCard 
                   card={card} 
                   drawnBalls={drawnBalls}
-                  onDelete={() => {}} // No action needed in view mode
-                  onDownload={() => {}} // No action needed in view mode
+                  onDelete={(cardId) => onDeleteCard(participant.id, cardId)} 
+                  onDownload={(cardId) => onDownloadCard(participant, cardId)}
                   isCompact={false}
                   currentPattern={currentPattern}
-                  readOnly={true}
+                  readOnly={false} 
                 />
               </div>
             </div>

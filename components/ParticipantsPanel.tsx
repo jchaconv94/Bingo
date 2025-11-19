@@ -120,6 +120,8 @@ const ParticipantsPanel: React.FC<Props> = ({
           drawnBalls={drawnBalls}
           onClose={() => setViewingWinnerData(null)}
           currentPattern={currentPattern}
+          onDeleteCard={onDeleteCard}
+          onDownloadCard={onDownloadCard}
         />
       )}
 
