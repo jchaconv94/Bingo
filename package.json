@@ -3,6 +3,7 @@
   "dev": "vite",
   "build": "vite build",
   "preview": "vite preview"
+  "start": "node index.js"
 },
 
   "name": "bingo-virtual",
