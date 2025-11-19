@@ -111,8 +111,11 @@ const GamePanel: React.FC<Props> = ({ drawnBalls, onDrawBall, onReset, historyLo
               <div 
                 key={i}
                 className={`
-                  w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 border
-                  ${i === 0 ? 'bg-amber-500 text-slate-900 border-amber-300 shadow-md shadow-amber-500/40' : 'bg-slate-800 text-slate-300 border-slate-700'}
+                  w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 border-2
+                  ${i === 0 
+                    ? 'bg-amber-500 text-slate-900 border-amber-300 shadow-md shadow-amber-500/40' 
+                    : 'bg-slate-800 text-slate-300 border-slate-700'
+                  }
                   animate-in fade-in zoom-in duration-300
                 `}
               >

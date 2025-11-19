@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Participant, GameState, Winner, TOTAL_BALLS, NUMBERS_PER_CARD, BingoCard } from './types.ts';
-import { generateUniqueRandomNumbers, generateId, checkWinners } from './utils/helpers.ts';
+import { generateBingoCardNumbers, generateId, checkWinners } from './utils/helpers.ts';
 import { exportToExcel, parseExcel, downloadCardImage, downloadAllCardsZip } from './services/exportService.ts';
 import RegistrationPanel from './components/RegistrationPanel.tsx';
 import GamePanel from './components/GamePanel.tsx';
@@ -100,7 +100,7 @@ const App: React.FC = () => {
       currentSeq++;
       newParticipant.cards.push({
         id: `C${currentSeq.toString().padStart(4, '0')}`,
-        numbers: generateUniqueRandomNumbers(NUMBERS_PER_CARD, 1, TOTAL_BALLS)
+        numbers: generateBingoCardNumbers() // NEW 5x5 GENERATOR
       });
     }
 
@@ -138,7 +138,7 @@ const App: React.FC = () => {
           ...p,
           cards: [...p.cards, {
             id: newCardId,
-            numbers: generateUniqueRandomNumbers(NUMBERS_PER_CARD, 1, TOTAL_BALLS)
+            numbers: generateBingoCardNumbers() // NEW 5x5 GENERATOR
           }]
         };
       }
