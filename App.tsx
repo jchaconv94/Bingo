@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Participant, GameState, Winner, TOTAL_BALLS, NUMBERS_PER_CARD, BingoCard, PatternKey, Prize } from './types.ts';
@@ -9,14 +10,17 @@ import ParticipantsPanel from './components/ParticipantsPanel.tsx';
 import WinnerModal from './components/WinnerModal.tsx';
 import WinnerDetailsModal from './components/WinnerDetailsModal.tsx';
 import PrizesPanel from './components/PrizesPanel.tsx';
-import { Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import EditTitleModal from './components/EditTitleModal.tsx';
+import { Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, Edit } from 'lucide-react';
 
 // LocalStorage Keys
 const LS_KEYS = {
   PARTICIPANTS: 'bingo_participants_v1',
   GAME_STATE: 'bingo_gamestate_v1',
   WINNERS: 'bingo_winners_v1',
-  PRIZES: 'bingo_prizes_v1'
+  PRIZES: 'bingo_prizes_v1',
+  TITLE: 'bingo_title_v1',
+  SUBTITLE: 'bingo_subtitle_v1'
 };
 
 // Helper para cargar datos de forma segura (evita errores si el JSON está corrupto)
@@ -58,6 +62,16 @@ const App: React.FC = () => {
     loadFromStorage(LS_KEYS.PRIZES, [])
   );
   
+  const [bingoTitle, setBingoTitle] = useState<string>(() =>
+    loadFromStorage(LS_KEYS.TITLE, "VIRTUAL BINGO PRO")
+  );
+  
+  const [bingoSubtitle, setBingoSubtitle] = useState<string>(() =>
+    loadFromStorage(LS_KEYS.SUBTITLE, "Aplicación web de bingo virtual")
+  );
+
+  const [showTitleModal, setShowTitleModal] = useState(false);
+
   // Estado para el modal de RESUMEN de ganadores (cuando salen nuevos ganadores)
   const [currentBatchWinners, setCurrentBatchWinners] = useState<Winner[]>([]);
 
@@ -89,6 +103,14 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(LS_KEYS.PRIZES, JSON.stringify(prizes));
   }, [prizes]);
+
+  useEffect(() => {
+    localStorage.setItem(LS_KEYS.TITLE, JSON.stringify(bingoTitle));
+  }, [bingoTitle]);
+
+  useEffect(() => {
+    localStorage.setItem(LS_KEYS.SUBTITLE, JSON.stringify(bingoSubtitle));
+  }, [bingoSubtitle]);
 
   // Listen for fullscreen changes (e.g. user presses ESC)
   useEffect(() => {
@@ -168,6 +190,20 @@ const App: React.FC = () => {
     if (window.confirm(`¿Estás seguro de eliminar a ${p?.name} ${p?.surname}? Se eliminarán también sus cartones.`)) {
       setParticipants(prev => prev.filter(p => p.id !== id));
       addLog(`Participante eliminado: ${p?.name} ${p?.surname}`);
+    }
+  };
+
+  const handleDeleteAllParticipants = () => {
+    if (participants.length === 0) return;
+    
+    const confirmMsg = "¡PELIGRO! ESTA ACCIÓN ES IRREVERSIBLE.\n\n¿Estás seguro de que deseas ELIMINAR A TODOS LOS PARTICIPANTES y sus cartones?\n\nSe perderá todo el registro de jugadores.";
+    
+    if (window.confirm(confirmMsg)) {
+      // Doble confirmación para seguridad
+      if (window.confirm("Confirma por segunda vez: ¿Borrar TODO?")) {
+        setParticipants([]);
+        addLog("⚠️ Se han eliminado todos los participantes del sistema.");
+      }
     }
   };
 
@@ -362,7 +398,7 @@ const App: React.FC = () => {
 
   const handleDownloadCard = (p: Participant, cid: string) => {
     const card = p.cards.find(c => c.id === cid);
-    if (card) downloadCardImage(p, card);
+    if (card) downloadCardImage(p, card, bingoTitle, bingoSubtitle);
   };
 
   // --- Prizes Handlers ---
@@ -391,6 +427,20 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      
+      {showTitleModal && (
+        <EditTitleModal
+          currentTitle={bingoTitle}
+          currentSubtitle={bingoSubtitle}
+          onSave={(newTitle, newSubtitle) => {
+            setBingoTitle(newTitle);
+            setBingoSubtitle(newSubtitle);
+            setShowTitleModal(false);
+          }}
+          onClose={() => setShowTitleModal(false)}
+        />
+      )}
+
       {/* 1. Modal Resumen de Ganadores (Aparece cuando alguien gana) */}
       {currentBatchWinners.length > 0 && (
         <WinnerModal 
@@ -415,71 +465,72 @@ const App: React.FC = () => {
       )}
 
       {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800 py-4 px-6 flex items-center justify-between shadow-lg sticky top-0 z-20">
+      <header className="bg-slate-900 border-b border-slate-800 py-3 px-6 flex items-center justify-between shadow-lg sticky top-0 z-20 h-14">
         <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-600">
-              VIRTUAL BINGO PRO
+          <div className="flex flex-col">
+            <h1 className="text-xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-600 leading-none uppercase">
+              {bingoTitle}
             </h1>
-            <p className="text-xs text-slate-500 font-medium">Aplicación web de bingo virtual</p>
+            <span className="text-[10px] text-slate-500 font-medium leading-tight">{bingoSubtitle}</span>
           </div>
         </div>
         
         <div className="flex items-center gap-6">
            <div className="text-right hidden sm:block">
-             <div className="text-xs text-slate-400">Desarrollado por</div>
-             <div className="text-sm font-semibold text-slate-200">Ing. Jordan Chacón Villacís</div>
+             <div className="text-[10px] text-slate-400">Desarrollado por</div>
+             <div className="text-xs font-semibold text-slate-200">Ing. Jordan Chacón Villacís</div>
            </div>
 
            <div className="flex items-center gap-2">
+             
+             <button 
+               onClick={() => setShowTitleModal(true)}
+               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
+               title="Personalizar Título y Descripción"
+             >
+               <Edit size={18} />
+             </button>
+
              <button 
                onClick={() => setShowSidebar(!showSidebar)}
-               className={`p-2 rounded-lg transition-colors border border-slate-700 ${showSidebar ? 'bg-slate-800 text-slate-400 hover:text-white' : 'bg-cyan-900/30 text-cyan-400 border-cyan-800'}`}
+               className={`p-1.5 rounded-lg transition-colors border border-slate-700 ${showSidebar ? 'bg-slate-800 text-slate-400 hover:text-white' : 'bg-cyan-900/30 text-cyan-400 border-cyan-800'}`}
                title={showSidebar ? "Ocultar Panel de Registro" : "Mostrar Panel de Registro"}
              >
-               {showSidebar ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+               {showSidebar ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
              </button>
 
              <button 
                onClick={toggleFullScreen}
-               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
+               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
                title={isFullscreen ? "Salir de Pantalla Completa" : "Pantalla Completa"}
              >
-               {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+               {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
              </button>
            </div>
         </div>
       </header>
 
-      {/* Main Layout */}
-      <main className={`flex-1 p-4 md:p-6 max-w-[1920px] mx-auto w-full grid grid-cols-1 gap-6 transition-all duration-300 ${
+      {/* Main Layout 
+          - Adjusted grid columns to increase Participants Panel width for 1366px and larger screens
+          - Sticky sidebars
+      */}
+      <main className={`flex-1 p-4 max-w-[1920px] mx-auto w-full grid grid-cols-1 gap-4 transition-all duration-300 items-start ${
         showSidebar 
-          ? 'xl:grid-cols-[350px_1fr_400px]' 
-          : 'xl:grid-cols-[1fr_400px]'
+          ? 'xl:grid-cols-[240px_1fr_360px] 2xl:grid-cols-[320px_1fr_500px]' 
+          : 'xl:grid-cols-[1fr_360px] 2xl:grid-cols-[1fr_500px]'
       }`}>
         
         {/* Left: Registration & Tools */}
         {showSidebar && (
-          <section className="flex flex-col gap-6 animate-in slide-in-from-left duration-300 fade-in overflow-y-auto h-[calc(100vh-155px)] pb-4 custom-scrollbar pr-2">
+          <section className="flex flex-col gap-4 animate-in slide-in-from-left duration-300 fade-in xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto custom-scrollbar pr-1">
             <RegistrationPanel 
               onRegister={handleRegister}
               onImport={handleImport}
               onExport={() => exportToExcel(participants)}
-              onGenerateAllImages={() => downloadAllCardsZip(participants)}
+              onGenerateAllImages={() => downloadAllCardsZip(participants, bingoTitle, bingoSubtitle)}
               totalParticipants={participants.length}
             />
             
-            {/* Instructions Mini Panel */}
-            <div className="bg-slate-900/30 border border-slate-800/50 rounded-xl p-4 text-xs text-slate-500">
-              <h4 className="font-bold text-slate-400 mb-2">Atajos rápidos</h4>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Usa Excel para carga masiva.</li>
-                <li>El sorteo guarda estado automáticamente.</li>
-                <li>Descarga cartones antes de empezar.</li>
-              </ul>
-            </div>
-
-            {/* New Prizes Panel - Now mainly for Management */}
             <PrizesPanel 
               prizes={prizes}
               onAddPrize={handleAddPrize}
@@ -487,11 +538,20 @@ const App: React.FC = () => {
               onRemovePrize={handleRemovePrize}
               onTogglePrize={handleTogglePrize}
             />
+            
+            {/* Instructions Mini Panel */}
+            <div className="bg-slate-900/30 border border-slate-800/50 rounded-xl p-3 text-[11px] text-slate-500">
+              <h4 className="font-bold text-slate-400 mb-1 text-[12px]">Atajos rápidos</h4>
+              <ul className="list-disc list-inside space-y-0.5">
+                <li>Usa Excel para carga masiva.</li>
+                <li>El sorteo guarda estado automáticamente.</li>
+              </ul>
+            </div>
           </section>
         )}
 
         {/* Center: Game */}
-        <section className="h-auto min-h-[500px] xl:h-[calc(100vh-155px)] flex flex-col xl:overflow-hidden">
+        <section className="flex flex-col gap-4">
           <GamePanel 
             drawnBalls={gameState.drawnBalls}
             onDrawBall={handleDrawBall}
@@ -505,8 +565,10 @@ const App: React.FC = () => {
           />
         </section>
 
-        {/* Right: Participants & Winners */}
-        <section className="h-[600px] xl:h-[calc(100vh-155px)]">
+        {/* Right: Participants & Winners 
+            - Sticky right sidebar
+        */}
+        <section className="h-[500px] xl:h-[calc(100vh-6rem)] xl:sticky xl:top-20">
           <ParticipantsPanel 
             participants={participants}
             drawnBalls={gameState.drawnBalls}
@@ -516,6 +578,7 @@ const App: React.FC = () => {
             onDownloadCard={handleDownloadCard}
             onEditParticipant={handleEditParticipant}
             onDeleteParticipant={handleDeleteParticipant}
+            onDeleteAllParticipants={handleDeleteAllParticipants}
             currentPattern={gameState.selectedPattern}
           />
         </section>

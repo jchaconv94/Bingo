@@ -47,16 +47,16 @@ const BingoCard: React.FC<Props> = ({
   return (
     <div className={`relative overflow-hidden rounded-xl border transition-all duration-300 flex flex-col ${isWinner ? 'bg-amber-900/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'bg-slate-800/50 border-white/5 hover:border-white/10'}`}>
       {/* Header Info */}
-      <div className={`flex items-center justify-between px-3 py-2 border-b ${isWinner ? 'border-amber-500/30 bg-amber-500/10' : 'border-white/5 bg-white/5'}`}>
+      <div className={`flex items-center justify-between ${isCompact ? 'px-2 py-1' : 'px-3 py-2'} border-b ${isWinner ? 'border-amber-500/30 bg-amber-500/10' : 'border-white/5 bg-white/5'}`}>
         <div className="flex items-center gap-2">
-          <span className={`font-mono font-bold ${isWinner ? 'text-amber-400' : 'text-slate-400'}`}>
+          <span className={`font-mono font-bold ${isWinner ? 'text-amber-400' : 'text-slate-400'} ${isCompact ? 'text-[10px]' : 'text-sm'}`}>
             {card.id}
           </span>
-          {isWinner && <span className="text-[10px] bg-amber-500 text-amber-950 font-bold px-1.5 py-0.5 rounded">BINGO!</span>}
+          {isWinner && <span className="text-[9px] bg-amber-500 text-amber-950 font-bold px-1 py-0 rounded">WIN!</span>}
         </div>
         
         {!readOnly && (
-          <div className="flex gap-1">
+          <div className="flex gap-0.5">
             <button 
               onClick={() => onDownload(card.id)} 
               className={`p-1 rounded transition-colors ${
@@ -66,7 +66,7 @@ const BingoCard: React.FC<Props> = ({
               }`}
               title="Descargar PNG"
             >
-              <Download size={14} />
+              <Download size={isCompact ? 12 : 14} />
             </button>
             <button 
               onClick={() => onDelete(card.id)} 
@@ -77,22 +77,22 @@ const BingoCard: React.FC<Props> = ({
               }`}
               title="Eliminar"
             >
-              <Trash2 size={14} />
+              <Trash2 size={isCompact ? 12 : 14} />
             </button>
           </div>
         )}
       </div>
 
-      <div className="p-3 flex-1 flex flex-col">
+      <div className={`${isCompact ? 'p-1.5' : 'p-3'} flex-1 flex flex-col`}>
         {/* BINGO Letters Header */}
-        <div className="grid grid-cols-5 gap-1 mb-2">
+        <div className={`grid grid-cols-5 ${isCompact ? 'gap-0.5 mb-1' : 'gap-1 mb-2'}`}>
            {headers.map((letter, i) => (
-             <div key={i} className="text-center font-black text-slate-500 text-2xl">{letter}</div>
+             <div key={i} className={`text-center font-black text-slate-500 ${isCompact ? 'text-[12px]' : 'text-3xl'}`}>{letter}</div>
            ))}
         </div>
 
         {/* Numbers Grid 5x5 */}
-        <div className={`grid grid-cols-5 gap-1.5 ${isCompact ? 'text-xs' : 'text-sm'}`}>
+        <div className={`grid grid-cols-5 ${isCompact ? 'gap-0.5 text-[9px]' : 'gap-1.5 text-sm'}`}>
           {card.numbers.map((number, index) => {
             const isCenter = index === 12;
             const isMarked = drawnBalls.includes(number);
@@ -114,7 +114,7 @@ const BingoCard: React.FC<Props> = ({
                      }
                   `}
                 >
-                  <Star size={isCompact ? 16 : 22} fill="currentColor" className={isRequiredByPattern ? "opacity-75" : "opacity-30"} />
+                  <Star size={isCompact ? 12 : 22} fill="currentColor" className={isRequiredByPattern ? "opacity-75" : "opacity-30"} />
                 </div>
                );
             }
@@ -150,9 +150,9 @@ const BingoCard: React.FC<Props> = ({
         </div>
       </div>
       
-      <div className="px-3 py-1 text-[10px] text-slate-500 text-right bg-slate-950/30 flex justify-between items-center">
-         <span className="text-slate-600 uppercase tracking-wider text-[9px]">{WIN_PATTERNS[currentPattern].label}</span>
-         <span>{matchesCount}/{totalRequired} aciertos</span>
+      <div className={`${isCompact ? 'px-2 py-0.5 text-[8px]' : 'px-3 py-1 text-[10px]'} text-slate-500 text-right bg-slate-950/30 flex justify-between items-center`}>
+         <span className={`text-slate-600 uppercase tracking-wider ${isCompact ? 'text-[8px]' : 'text-[9px]'}`}>{WIN_PATTERNS[currentPattern].label}</span>
+         <span>{matchesCount}/{totalRequired}</span>
       </div>
     </div>
   );

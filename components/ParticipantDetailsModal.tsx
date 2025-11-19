@@ -12,6 +12,8 @@ interface Props {
   onAddCard: () => void;
   onSave: (data: { name: string, surname: string, dni: string, phone: string }) => void;
   onDelete: () => void;
+  onDeleteCard: (participantId: string, cardId: string) => void;
+  onDownloadCard: (participant: Participant, cardId: string) => void;
 }
 
 const ParticipantDetailsModal: React.FC<Props> = ({ 
@@ -21,7 +23,9 @@ const ParticipantDetailsModal: React.FC<Props> = ({
   currentPattern,
   onAddCard,
   onSave,
-  onDelete
+  onDelete,
+  onDeleteCard,
+  onDownloadCard
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -244,11 +248,11 @@ const ParticipantDetailsModal: React.FC<Props> = ({
                          <BingoCard 
                             card={card}
                             drawnBalls={drawnBalls}
-                            onDelete={() => {}}
-                            onDownload={() => {}}
+                            onDelete={(cid) => onDeleteCard(participant.id, cid)}
+                            onDownload={(cid) => onDownloadCard(participant, cid)}
                             isCompact={true}
                             currentPattern={currentPattern}
-                            readOnly={true}
+                            readOnly={false}
                          />
                       </div>
                    ))}

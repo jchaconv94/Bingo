@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 import saveAs from 'file-saver';
 import html2canvas from 'html2canvas';
@@ -121,7 +122,7 @@ export const parseExcel = async (file: File): Promise<Participant[]> => {
 
 // --- Image Generation Functions ---
 
-const createTempCardElement = (participant: Participant, card: BingoCard): HTMLElement => {
+const createTempCardElement = (participant: Participant, card: BingoCard, title: string, subtitle: string = ""): HTMLElement => {
   const container = document.createElement('div');
   Object.assign(container.style, {
     width: '600px',
@@ -136,11 +137,14 @@ const createTempCardElement = (participant: Participant, card: BingoCard): HTMLE
   });
 
   // Header Section matching the "BINGO VIRTUAL" clean design
+  // Added subtitle logic below H1
+  // Adjusted font-size for title to 32px to accommodate longer titles better
   const header = `
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
-      <div>
-        <h1 style="font-size: 42px; font-weight: 900; margin: 0; color: #1e293b; letter-spacing: -1px; line-height: 1;">BINGO VIRTUAL</h1>
-        <div style="margin-top: 12px;">
+      <div style="max-width: 75%;">
+        <h1 style="font-size: 32px; font-weight: 900; margin: 0; color: #1e293b; letter-spacing: -1px; line-height: 1.1; text-transform: uppercase;">${title}</h1>
+        ${subtitle ? `<div style="font-size: 14px; color: #64748b; font-weight: 600; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">${subtitle}</div>` : ''}
+        <div style="margin-top: 15px;">
            <div style="font-size: 22px; font-weight: 700; color: #334155; line-height: 1.2;">${participant.name} ${participant.surname}</div>
            <div style="font-size: 16px; color: #64748b;">DNI: ${participant.dni}</div>
         </div>
@@ -197,18 +201,20 @@ const createTempCardElement = (participant: Participant, card: BingoCard): HTMLE
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       `;
 
+      // Wrapper flex para centrar el contenido
+      const contentWrapper = `display:flex; justify-content:center; align-items:center; height:100%; width: 100%;`;
+
       if (isCenter) {
         gridHtml += `
           <td style="${cellStyle}">
-             <!-- Star Icon SVG -->
-             <div style="display:flex; justify-content:center; align-items:center; height:100%; width: 100%;">
+             <div style="${contentWrapper}">
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="#cbd5e1" stroke="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.5;">
                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                 </svg>
              </div>
           </td>`;
       } else {
-        gridHtml += `<td style="${cellStyle}">${value}</td>`;
+        gridHtml += `<td style="${cellStyle}"><div style="${contentWrapper}">${value}</div></td>`;
       }
     }
     gridHtml += '</tr>';
@@ -227,8 +233,8 @@ const createTempCardElement = (participant: Participant, card: BingoCard): HTMLE
   return container;
 };
 
-export const downloadCardImage = async (participant: Participant, card: BingoCard) => {
-  const el = createTempCardElement(participant, card);
+export const downloadCardImage = async (participant: Participant, card: BingoCard, title: string = "BINGO VIRTUAL", subtitle: string = "") => {
+  const el = createTempCardElement(participant, card, title, subtitle);
   document.body.appendChild(el);
   try {
     const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#f8fafc' });
@@ -241,13 +247,13 @@ export const downloadCardImage = async (participant: Participant, card: BingoCar
   }
 };
 
-export const downloadAllCardsZip = async (participants: Participant[]) => {
+export const downloadAllCardsZip = async (participants: Participant[], title: string = "BINGO VIRTUAL", subtitle: string = "") => {
   const zip = new JSZip();
   const folder = zip.folder("cartones_bingo");
   
   for (const p of participants) {
     for (const card of p.cards) {
-      const el = createTempCardElement(p, card);
+      const el = createTempCardElement(p, card, title, subtitle);
       document.body.appendChild(el);
       try {
         const canvas = await html2canvas(el, { scale: 1.5, backgroundColor: '#f8fafc' });
