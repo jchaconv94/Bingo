@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, User, Ticket, Phone, CreditCard, Trash2, Edit2, Plus, Hash, Fingerprint, Save, XCircle, MessageCircle, FileText } from 'lucide-react';
 import { Participant, PatternKey } from '../types.ts';
@@ -202,7 +201,11 @@ const ParticipantDetailsModal: React.FC<Props> = ({
            ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                   <button 
-                    onClick={onAddCard}
+                    onClick={() => {
+                      if (window.confirm(`¿Estás seguro de añadir un cartón extra a ${participant.name} ${participant.surname}?`)) {
+                        onAddCard();
+                      }
+                    }}
                     className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 hover:border-emerald-500/30 rounded-xl py-3 transition-all group shadow-lg shadow-black/20"
                   >
                     <div className="bg-emerald-500/10 p-1.5 rounded-lg group-hover:bg-emerald-500/20 transition-colors">
@@ -279,7 +282,14 @@ const ParticipantDetailsModal: React.FC<Props> = ({
                 <div className="flex flex-col items-center justify-center py-12 text-slate-500 bg-slate-950/30 rounded-2xl border border-dashed border-slate-800">
                    <Ticket size={48} className="mb-4 opacity-20" />
                    <p>Este participante no tiene cartones asignados.</p>
-                   <button onClick={onAddCard} className="mt-4 text-emerald-500 hover:text-emerald-400 text-sm font-medium underline">
+                   <button 
+                      onClick={() => {
+                        if (window.confirm(`¿Estás seguro de añadir un cartón extra a ${participant.name} ${participant.surname}?`)) {
+                          onAddCard();
+                        }
+                      }} 
+                      className="mt-4 text-emerald-500 hover:text-emerald-400 text-sm font-medium underline"
+                   >
                       Asignar un cartón ahora
                    </button>
                 </div>

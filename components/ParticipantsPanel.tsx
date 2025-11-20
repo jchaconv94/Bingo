@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, Users, Medal, Ticket, Edit2, Trash2, Save, X, Eye, EyeOff, CreditCard, ChevronDown, ChevronUp, ScanEye, Phone, Fingerprint, MessageCircle, FileText, MoreVertical } from 'lucide-react';
 import { Participant, Winner, BingoCard as BingoCardType, PatternKey, Prize } from '../types.ts';
@@ -440,7 +439,11 @@ const ParticipantsPanel: React.FC<Props> = ({
                       <div className="w-px h-4 bg-slate-800 mx-1"></div>
 
                       <button 
-                        onClick={() => onAddCard(p.id)}
+                        onClick={() => {
+                           if (window.confirm(`¿Estás seguro de añadir un cartón extra a ${p.name} ${p.surname}?`)) {
+                              onAddCard(p.id);
+                           }
+                        }}
                         className="flex items-center gap-1 pl-1.5 pr-2 py-1 rounded bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-500 hover:text-emerald-400 border border-emerald-500/20 transition-all shadow-sm"
                         title="Agregar cartón extra"
                       >
