@@ -275,8 +275,8 @@ const App: React.FC = () => {
     
     if (isWinningCard) {
        title = '¿Eliminar Cartón Ganador?';
-       // Combinamos el aviso con la confirmación en un solo paso
-       message = `⚠️ ESTE CARTÓN ES UN GANADOR.\n\nEliminarlo lo borrará del participante, pero el registro del premio histórico se mantendrá intacto.\n\n¿Estás seguro de eliminar el cartón #${cardId}?`;
+       // Combinamos el aviso con la confirmación en un solo paso para mejor UX
+       message = `⚠️ ESTE CARTÓN ES UN GANADOR.\n\nEliminarlo lo borrará del participante, pero el registro del premio histórico se mantendrá intacto (visible en Ganadores).\n\n¿Estás seguro de eliminar el cartón #${cardId}?`;
        type = 'warning';
     }
 
@@ -484,11 +484,22 @@ const App: React.FC = () => {
   const handleViewDetailsFromSummary = (winner: Winner) => {
     const participant = participants.find(p => p.id === winner.participantId);
     if (participant) {
-      const card = participant.cards.find(c => c.id === winner.cardId);
+      let card = participant.cards.find(c => c.id === winner.cardId);
+      
+      // FIX: Usar snapshot si el cartón vivo no existe (fue borrado)
+      // Esto soluciona que no se pueda ver el detalle después de borrar un cartón ganador
+      if (!card && winner.cardSnapshot) {
+         card = winner.cardSnapshot;
+      }
+
       if (card) {
         setViewingDetailsData({ winner, participant, card });
       } else {
-        showAlert({ message: "Cartón no encontrado", type: 'danger' });
+        showAlert({ 
+            title: "Cartón no encontrado", 
+            message: "El cartón ganador ha sido eliminado y no se encontró un registro histórico (snapshot). Esto puede ocurrir con ganadores antiguos.", 
+            type: 'danger' 
+        });
       }
     } else {
       showAlert({ message: "Participante no encontrado", type: 'danger' });
