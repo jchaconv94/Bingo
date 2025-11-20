@@ -201,6 +201,7 @@ export const checkWinners = (
             winningNumber: winningBall,
             winningPattern: patternKey, // Persist the pattern that caused the win
             drawnBalls: [...drawnBalls], // Persist the balls drawn (Snapshot)
+            cardSnapshot: { ...c }, // Persist the card layout (Snapshot) so we can view it even if deleted later
             round: currentRound // Persist the round
           });
         }

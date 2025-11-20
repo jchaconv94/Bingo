@@ -1,8 +1,5 @@
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, RotateCcw, Trophy, Hash, History, LayoutGrid, Eye, X, Star, Gift, CheckCircle, Circle } from 'lucide-react';
+import { Play, RotateCcw, Trophy, Hash, History, LayoutGrid, Eye, X, Star, Gift, CheckCircle, Circle, PauseCircle, PlayCircle, Lock } from 'lucide-react';
 import { PatternKey, WinPattern, Prize } from '../types.ts';
 import { WIN_PATTERNS } from '../utils/helpers.ts';
 
@@ -17,6 +14,8 @@ interface Props {
   prizes?: Prize[];
   onTogglePrize?: (id: string) => void;
   roundLocked: boolean;
+  isPaused?: boolean;
+  onTogglePause?: () => void;
 }
 
 const getBingoLetter = (num: number): string => {
@@ -38,7 +37,9 @@ const GamePanel: React.FC<Props> = ({
   onPatternChange,
   prizes = [],
   onTogglePrize,
-  roundLocked
+  roundLocked,
+  isPaused = false,
+  onTogglePause
 }) => {
   const [currentBall, setCurrentBall] = useState<number | string>('—');
   const [isAnimating, setIsAnimating] = useState(false);
@@ -100,13 +101,19 @@ const GamePanel: React.FC<Props> = ({
   
   const noPattern = currentPattern === 'NONE';
   
-  const isDrawDisabled = isAnimating || drawnBalls.length >= 75 || !hasParticipants || noPrizes || noPattern || allPrizesAwarded || roundLocked;
+  // Lógica para ocultar el botón de PAUSAR si no ha iniciado el juego (drawnBalls length > 0)
+  const gameStarted = drawnBalls.length > 0;
+  
+  const isDrawDisabled = isAnimating || drawnBalls.length >= 75 || !hasParticipants || noPrizes || noPattern || allPrizesAwarded || roundLocked || isPaused;
 
   let buttonTooltip = "";
   let buttonLabel = "SACAR BOLILLA";
 
   // Orden de prioridad de mensajes
-  if (noPrizes) {
+  if (isPaused) {
+    buttonTooltip = "Juego Pausado. Reanuda para continuar.";
+    buttonLabel = "PAUSADO";
+  } else if (noPrizes) {
     buttonTooltip = "Registra al menos un premio para comenzar.";
   } else if (allPrizesAwarded) {
     buttonTooltip = "¡Juego Terminado! Todos los premios entregados.";
@@ -254,49 +261,93 @@ const GamePanel: React.FC<Props> = ({
         {/* Main Display Area */}
         <div className="relative min-h-[220px] flex items-center justify-center py-2">
           
-          {/* Left Column: Prizes List (Visual Integration) - REDUCED WIDTH */}
+          {/* Left Column: Prizes List (Visual Integration) */}
           {prizes.length > 0 && (
-             <div className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-48 hidden lg:flex flex-col gap-2 max-h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pl-2 pr-3 py-1">
+             <div className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-64 hidden lg:flex flex-col gap-3 max-h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pl-2 pr-3 py-2">
                 {prizes.map((prize, idx) => {
                   // Logic to highlight the NEXT prize to be won
                   const previousWon = idx === 0 || prizes[idx - 1].isAwarded;
                   const isNext = !prize.isAwarded && previousWon;
                   
+                  // Logic for dynamic font size based on length to force single line
+                  const textLen = prize.description.length;
+                  let dynamicFontSize = 'text-lg'; // Default base for inactive
+                  
+                  if (isNext) {
+                    // Ajuste fino para el ancho de w-64 (aprox 256px total - padding - icono)
+                    // Espacio real aprox para texto: 160px
+                    
+                    // Ajustado para evitar desborde a la derecha en montos comunes como S/.200.00 (9 chars)
+                    if (textLen <= 6) dynamicFontSize = 'text-4xl';       
+                    else if (textLen <= 8) dynamicFontSize = 'text-3xl';  
+                    else if (textLen <= 10) dynamicFontSize = 'text-2xl'; // Covers S/.200.00 (9) and S/.1000.00 (10)
+                    else if (textLen <= 13) dynamicFontSize = 'text-xl';  // Covers S/.10000.00 (11)
+                    else dynamicFontSize = 'text-sm';                     
+                  } else {
+                    // For inactive prizes
+                    dynamicFontSize = textLen > 15 ? 'text-xs' : 'text-sm';
+                  }
+
                   return (
                     <div 
                       key={prize.id}
                       onClick={() => onTogglePrize && onTogglePrize(prize.id)}
                       className={`
-                        relative p-2 rounded-lg border backdrop-blur-md cursor-pointer transition-all duration-300
+                        relative rounded-xl cursor-pointer transition-all duration-500
                         ${prize.isAwarded 
-                          ? 'bg-slate-900/40 border-slate-800 text-slate-500 opacity-70' 
+                          ? 'bg-slate-900 border border-emerald-900/50 opacity-70 hover:opacity-100 grayscale-[0.3]' 
                           : isNext 
-                             ? 'bg-amber-950/80 border-amber-400 border shadow-[0_0_15px_rgba(245,158,11,0.25)] scale-105 z-10' 
-                             : 'bg-slate-900/60 border-slate-700 text-slate-300 opacity-80'
+                             ? 'bg-gradient-to-br from-amber-500 to-orange-600 border-2 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.35)] scale-105 z-10 ring-4 ring-amber-500/10' 
+                             : 'bg-slate-900/50 border border-slate-800 opacity-50'
                         }
                       `}
                     >
-                      {isNext && (
-                        <div className="absolute -top-2 right-0 bg-amber-500 text-amber-950 text-[9px] font-black px-1 py-0.5 rounded shadow-sm animate-pulse">
-                           JUGANDO
-                        </div>
-                      )}
-                      {prize.isAwarded && (
-                        <div className="absolute -top-2 right-0 bg-emerald-600 text-white text-[9px] font-black px-1 py-0.5 rounded shadow-sm z-10">
-                           ENTREGADO
-                        </div>
-                      )}
-                      <div className="flex items-start gap-2">
-                         <div className={`mt-0.5 ${prize.isAwarded ? 'text-emerald-500' : isNext ? 'text-amber-400' : 'text-slate-500'}`}>
-                           {prize.isAwarded ? <CheckCircle size={14} /> : <Gift size={14} />}
-                         </div>
-                         <div className="flex-1 min-w-0">
-                            <div className="text-[9px] uppercase font-bold tracking-wider opacity-70 mb-0 leading-none">{prize.name}</div>
-                            <div className={`text-xs font-bold truncate leading-tight mt-0.5 ${prize.isAwarded ? 'line-through decoration-slate-600' : isNext ? 'text-amber-200 text-sm' : 'text-white'}`}>
-                              {prize.description}
-                            </div>
-                         </div>
-                      </div>
+                       {/* Card Decoration for Active */}
+                       {isNext && <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>}
+
+                       <div className="p-3 flex items-center gap-3 relative overflow-hidden">
+                          
+                          {/* Icon Box */}
+                          <div className={`
+                             flex-shrink-0 flex items-center justify-center rounded-lg backdrop-blur-md shadow-inner
+                             ${isNext 
+                                ? 'w-14 h-14 bg-white/20 text-white' 
+                                : prize.isAwarded 
+                                  ? 'w-10 h-10 bg-emerald-950 text-emerald-500' 
+                                  : 'w-8 h-8 bg-slate-800 text-slate-600'}
+                          `}>
+                             {prize.isAwarded ? <CheckCircle size={20} /> : <Gift size={isNext ? 32 : 20} className={isNext ? "drop-shadow-md" : ""} />}
+                          </div>
+
+                          <div className="flex-1 min-w-0 z-10">
+                             {/* Top Label */}
+                             {isNext && (
+                                <div className="text-[9px] font-black text-amber-100 uppercase tracking-widest mb-0.5 animate-pulse">
+                                   JUGANDO
+                                </div>
+                             )}
+                             {prize.isAwarded && (
+                                <div className="text-[9px] font-bold text-emerald-500 uppercase tracking-wider mb-0.5">
+                                   ENTREGADO
+                                </div>
+                             )}
+
+                             {/* Prize Name */}
+                             <div className={`text-[10px] uppercase font-bold tracking-wide leading-none mb-1 ${isNext ? 'text-white/90' : 'text-slate-400'}`}>
+                                {prize.name}
+                             </div>
+                             
+                             {/* Prize Amount/Description */}
+                             <div className={`font-black leading-none whitespace-nowrap ${dynamicFontSize} tracking-tight ${isNext ? 'text-white drop-shadow-sm' : prize.isAwarded ? 'text-slate-500 line-through' : 'text-slate-500'}`}>
+                               {prize.description}
+                             </div>
+                          </div>
+
+                          {/* Background Watermark for Active */}
+                          {isNext && (
+                             <Gift className="absolute -right-2 -bottom-3 text-white/10 rotate-[-15deg]" size={64} />
+                          )}
+                       </div>
                     </div>
                   );
                 })}
@@ -350,13 +401,13 @@ const GamePanel: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mt-4 relative z-10">
+        <div className="grid grid-cols-4 gap-3 mt-4 relative z-10">
           <button
             onClick={handleDraw}
             disabled={isDrawDisabled}
             title={buttonTooltip}
             className={`
-              col-span-2 flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-xl sm:text-2xl shadow-lg transition-all relative overflow-hidden
+              col-span-3 flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-xl sm:text-2xl shadow-lg transition-all relative overflow-hidden
               ${isDrawDisabled
                 ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
                 : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white shadow-indigo-900/30 active:scale-95'
@@ -371,14 +422,27 @@ const GamePanel: React.FC<Props> = ({
             <Play fill="currentColor" size={26} />
             {isAnimating ? 'Girando...' : buttonLabel}
           </button>
-          
-          <button
-            onClick={onReset}
-            className={`col-span-2 text-xs sm:text-sm py-2 rounded transition-colors flex items-center justify-center gap-2 ${roundFinishedNeedsReset ? 'bg-amber-900/30 text-amber-400 border border-amber-500/30 animate-pulse hover:bg-amber-900/50' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'}`}
-          >
-            <RotateCcw size={16} /> 
-            {roundFinishedNeedsReset ? 'Resetear bolillas' : 'Resetear Sorteo'}
-          </button>
+
+          <div className="col-span-1 flex flex-col gap-2">
+              {gameStarted && (
+                <button
+                  onClick={onTogglePause}
+                  className={`flex-1 rounded-lg transition-all flex flex-col items-center justify-center text-[10px] font-bold uppercase tracking-wider gap-1 border ${isPaused ? 'bg-amber-500 text-slate-900 border-amber-400 animate-pulse' : 'bg-slate-800 text-amber-500 border-slate-700 hover:bg-slate-700'}`}
+                  title="Pausar sorteo para realizar acciones administrativas (Eliminar participantes)"
+                >
+                   {isPaused ? <PlayCircle size={20} /> : <PauseCircle size={20} />}
+                   {isPaused ? 'REANUDAR' : 'PAUSAR'}
+                </button>
+              )}
+
+              <button
+                onClick={onReset}
+                className={`flex-1 rounded-lg transition-colors flex flex-col items-center justify-center text-[10px] font-bold uppercase tracking-wider gap-1 ${roundFinishedNeedsReset ? 'bg-amber-900/30 text-amber-400 border border-amber-500/30 animate-pulse hover:bg-amber-900/50' : 'bg-slate-800 text-slate-500 border border-slate-700 hover:text-slate-300 hover:bg-slate-700'}`}
+              >
+                <RotateCcw size={16} /> 
+                RESETEAR
+              </button>
+          </div>
         </div>
       </div>
 

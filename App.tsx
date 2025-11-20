@@ -48,11 +48,12 @@ const App: React.FC = () => {
       lastCardSequence: 100,
       selectedPattern: 'NONE' as PatternKey,
       roundLocked: false,
-      gameRound: 1 // START AT ROUND 1
+      gameRound: 1, // START AT ROUND 1
+      isPaused: false
     };
     const loaded = loadFromStorage(LS_KEYS.GAME_STATE, defaults);
     // Ensure new property exists if loaded from old state
-    return { ...defaults, ...loaded };
+    return { ...defaults, ...loaded, isPaused: loaded.isPaused || false };
   });
 
   const [winners, setWinners] = useState<Winner[]>(() => 
@@ -141,6 +142,17 @@ const App: React.FC = () => {
     }));
   };
 
+  const handleTogglePause = () => {
+    setGameState(prev => {
+      const newState = !prev.isPaused;
+      return {
+        ...prev,
+        isPaused: newState,
+        history: [...prev.history, newState ? "⏸️ Sorteo Pausado (Modo Admin)" : "▶️ Sorteo Reanudado"]
+      };
+    });
+  };
+
   const handlePatternChange = (pattern: PatternKey) => {
     if (gameState.drawnBalls.length > 0) {
        if (!window.confirm("¿Cambiar el patrón a mitad de juego? Esto no afectará las bolillas ya sorteadas, pero cambiará las condiciones de victoria.")) return;
@@ -186,14 +198,46 @@ const App: React.FC = () => {
 
   const handleDeleteParticipant = (id: string) => {
     const p = participants.find(p => p.id === id);
-    if (window.confirm(`¿Estás seguro de eliminar a ${p?.name} ${p?.surname}? Se eliminarán también sus cartones.`)) {
+    if (!p) return;
+
+    // 1. Validar si el participante YA ES GANADOR
+    const isWinner = winners.some(w => w.participantId === id);
+    if (isWinner) {
+       alert(`🚫 ACCIÓN DENEGADA\n\nNo puedes eliminar a ${p.name} porque ya ha ganado un premio.\nEl historial de ganadores es sagrado.`);
+       return;
+    }
+
+    // 2. Validar si hay juego en curso (Premios Activos/Bolillas Sorteadas) Y NO ESTÁ PAUSADO
+    // STRICT CHECK: If any ball is drawn, game is considered in progress, requiring PAUSE for deletions.
+    const gameInProgress = gameState.drawnBalls.length > 0;
+    
+    if (gameInProgress && !gameState.isPaused) {
+       alert(`⏸️ JUEGO EN CURSO\n\nPara eliminar participantes durante un sorteo activo, primero debes PAUSAR el juego usando el botón de Pausa en el panel de control.`);
+       return;
+    }
+
+    if (window.confirm(`¿Estás seguro de eliminar a ${p.name} ${p.surname}? Se eliminarán también sus cartones.`)) {
       setParticipants(prev => prev.filter(p => p.id !== id));
-      addLog(`Participante eliminado: ${p?.name} ${p?.surname}`);
+      addLog(`Participante eliminado: ${p.name} ${p.surname}`);
     }
   };
 
   const handleDeleteAllParticipants = () => {
     if (participants.length === 0) return;
+
+    // 1. Validar si hay ganadores existentes
+    if (winners.length > 0) {
+       alert("🚫 ACCIÓN DENEGADA\n\nNo puedes borrar a todos los participantes porque ya existen ganadores registrados. Debes resetear el evento completo primero.");
+       return;
+    }
+
+    // 2. Validar juego activo
+    const gameInProgress = gameState.drawnBalls.length > 0;
+    if (gameInProgress && !gameState.isPaused) {
+       alert(`⏸️ JUEGO EN CURSO\n\nDebes PAUSAR o RESETEAR el sorteo antes de eliminar masivamente.`);
+       return;
+    }
+
     if (window.confirm("¡PELIGRO! ESTA ACCIÓN ES IRREVERSIBLE.\n\n¿Estás seguro de que deseas ELIMINAR A TODOS LOS PARTICIPANTES y sus cartones?")) {
       if (window.confirm("Confirma por segunda vez: ¿Borrar TODO?")) {
         setParticipants([]);
@@ -226,6 +270,20 @@ const App: React.FC = () => {
   };
 
   const handleDeleteCard = (participantId: string, cardId: string) => {
+    // Validar si el juego está activo y no pausado (STRICT CHECK)
+    const gameInProgress = gameState.drawnBalls.length > 0;
+    
+    if (gameInProgress && !gameState.isPaused) {
+       alert(`⏸️ PAUSA REQUERIDA\n\nPara eliminar cartones durante el juego, primero debes PAUSAR.`);
+       return;
+    }
+
+    // Validar si este cartón es ganador (aunque la lógica principal ya protege al ganador)
+    const isWinningCard = winners.some(w => w.cardId === cardId);
+    if (isWinningCard) {
+       alert("🚫 Este cartón ha ganado un premio y no puede ser eliminado completamente (aunque se elimine del usuario, quedará en el histórico de ganadores).");
+    }
+
     if (!window.confirm("¿Seguro que deseas eliminar este cartón?")) return;
     setParticipants(prev => prev.map(p => {
       if (p.id === participantId) {
@@ -239,6 +297,11 @@ const App: React.FC = () => {
   };
 
   const handleDrawBall = () => {
+    if (gameState.isPaused) {
+      alert("El juego está pausado. Reanúdalo para continuar el sorteo.");
+      return;
+    }
+
     if (participants.length === 0) {
       alert("¡Atención! No hay participantes registrados.");
       return;
@@ -453,7 +516,8 @@ const App: React.FC = () => {
           history: [],
           selectedPattern: 'NONE',
           roundLocked: false,
-          gameRound: prev.gameRound + 1 // INCREMENT ROUND TO ALLOW NEW WINNERS
+          gameRound: prev.gameRound + 1, // INCREMENT ROUND TO ALLOW NEW WINNERS
+          isPaused: false
        }));
        setCurrentBatchWinners([]); // Cerrar modal si estaba abierto
        addLog("🔄 Iniciando nueva ronda para el siguiente premio.");
@@ -474,7 +538,8 @@ const App: React.FC = () => {
       history: [],
       selectedPattern: 'NONE',
       roundLocked: false,
-      gameRound: 1 // RESET ROUND TO 1
+      gameRound: 1, // RESET ROUND TO 1
+      isPaused: false
     }));
     setWinners([]);
     setCurrentBatchWinners([]);
@@ -683,7 +748,8 @@ const App: React.FC = () => {
       {viewingDetailsData && (
         <WinnerDetailsModal 
           winner={viewingDetailsData.winner}
-          participant={viewingDetailsData.participant}
+          // MODIFIED: Pass the live participant data (if found) to allow reactive UI updates when cards are deleted
+          participant={participants.find(p => p.id === viewingDetailsData.participant.id) || viewingDetailsData.participant}
           card={viewingDetailsData.card}
           drawnBalls={gameState.drawnBalls}
           onClose={() => setViewingDetailsData(null)}
@@ -752,6 +818,8 @@ const App: React.FC = () => {
             prizes={prizes}
             onTogglePrize={handleTogglePrize}
             roundLocked={gameState.roundLocked || false}
+            isPaused={gameState.isPaused}
+            onTogglePause={handleTogglePause}
           />
         </section>
 

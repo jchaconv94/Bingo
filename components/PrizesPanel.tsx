@@ -31,7 +31,21 @@ const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEdi
     // Si el nombre está vacío, usar el sugerido
     const nameToUse = formData.name.trim() || getNextName();
     
-    onAddPrize(nameToUse, formData.description);
+    // Formatear el monto a S/.0.00
+    const amountValue = parseFloat(formData.description);
+    
+    // Validación simple para asegurar que es un número válido
+    if (isNaN(amountValue)) return;
+
+    // Validación de rango: 1 a 10000
+    if (amountValue < 1 || amountValue > 10000) {
+      alert("El monto del premio debe estar entre 1 y 10,000");
+      return;
+    }
+
+    const formattedDescription = `S/.${amountValue.toFixed(2)}`;
+    
+    onAddPrize(nameToUse, formattedDescription);
     setFormData({ name: '', description: '' });
   };
 
@@ -79,11 +93,14 @@ const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEdi
           <div className="relative flex-1">
              <DollarSign className="absolute left-1.5 top-1/2 -translate-y-1/2 text-slate-500" size={10} />
              <input
-              type="text"
+              type="number"
+              min="1"
+              max="10000"
+              step="0.01"
               value={formData.description}
               onChange={e => setFormData({...formData, description: e.target.value})}
               className="w-full bg-slate-900 border border-slate-700 rounded pl-4 pr-2 py-1 text-[10px] text-white focus:border-amber-500 outline-none placeholder-slate-600"
-              placeholder="Monto (S/)"
+              placeholder="0.00"
               required
             />
 

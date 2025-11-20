@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Search, Users, Medal, Ticket, Edit2, Trash2, Save, X, Eye, EyeOff, CreditCard, ChevronDown, ChevronUp, ScanEye, Phone, Fingerprint, MessageCircle, FileText } from 'lucide-react';
 import { Participant, Winner, BingoCard as BingoCardType, PatternKey, Prize } from '../types.ts';
@@ -92,11 +93,18 @@ const ParticipantsPanel: React.FC<Props> = ({
   const handleViewWinner = (winner: Winner) => {
     const participant = participants.find(p => p.id === winner.participantId);
     if (participant) {
-      const card = participant.cards.find(c => c.id === winner.cardId);
+      // Try to find the LIVE card
+      let card = participant.cards.find(c => c.id === winner.cardId);
+      
+      // If live card is missing (deleted), try to use the Snapshot
+      if (!card && winner.cardSnapshot) {
+         card = winner.cardSnapshot;
+      }
+
       if (card) {
         setViewingWinnerData({ winner, participant, card });
       } else {
-        alert("El cartón ganador parece haber sido eliminado.");
+        alert("El cartón ganador ha sido eliminado y no se encontró un registro histórico.");
       }
     } else {
       alert("El participante parece haber sido eliminado.");

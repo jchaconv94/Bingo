@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { X, User, Calendar, Hash, Trophy, Gift, Users, Divide } from 'lucide-react';
 import { Participant, Winner, BingoCard as BingoCardType, PatternKey, Prize } from '../types.ts';
@@ -51,9 +50,12 @@ const WinnerDetailsModal: React.FC<Props> = ({
 
   if (prizeName && prizeDescription) {
     // Extract numbers from description (e.g. "S/. 100.00" -> 100.00)
-    const match = prizeDescription.match(/[0-9.,]+/);
+    // FIX: Updated regex to require digits (\d+) at the start of the match.
+    // Old regex /[0-9.,]+/ was matching the "." in "S/." and interpreting "S/.10000" as ".10000" (0.1)
+    const match = prizeDescription.match(/(\d+(?:[.,]\d+)*)/);
+    
     if (match) {
-       // Remove commas if present to parse correctly
+       // Remove commas if present to parse correctly (Assumes 10,000.00 format or 10000.00)
        const cleanNum = match[0].replace(/,/g, '');
        prizeAmount = parseFloat(cleanNum);
        
@@ -77,6 +79,10 @@ const WinnerDetailsModal: React.FC<Props> = ({
   const displayDrawnBalls = (winner.drawnBalls && winner.drawnBalls.length > 0) 
       ? winner.drawnBalls 
       : drawnBalls;
+
+  // VALIDAR SI EL CARTÓN EXISTE EN VIVO
+  // Si el cartón ya no está en la lista del participante, asumimos que es un Snapshot (eliminado).
+  const isLiveCard = participant.cards.some(c => c.id === card.id);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -194,6 +200,11 @@ const WinnerDetailsModal: React.FC<Props> = ({
                       <span className="text-slate-400">ID Cartón</span>
                       <span className="text-white font-mono">{winner.cardId}</span>
                     </div>
+                    {!isLiveCard && (
+                       <div className="mt-3 p-2 bg-rose-900/20 border border-rose-500/20 rounded text-xs text-rose-300 text-center font-medium">
+                          Este cartón ha sido eliminado del participante, pero se mantiene en el registro histórico.
+                       </div>
+                    )}
                  </div>
               </div>
             </div>
@@ -211,7 +222,7 @@ const WinnerDetailsModal: React.FC<Props> = ({
                   hasPhone={!!participant.phone}
                   isCompact={false}
                   currentPattern={displayPattern}
-                  readOnly={false} 
+                  readOnly={!isLiveCard} // Disable actions if snapshot
                 />
               </div>
             </div>

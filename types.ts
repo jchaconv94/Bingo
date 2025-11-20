@@ -22,6 +22,7 @@ export interface Winner {
   winningNumber: number;
   winningPattern?: PatternKey; // The pattern used when this win occurred
   drawnBalls?: number[]; // Snapshot of balls drawn at the moment of win
+  cardSnapshot?: BingoCard; // Snapshot of the card layout at the moment of win
   // Snapshot of the prize won at that moment
   prizeId?: string;
   prizeName?: string;
@@ -68,6 +69,7 @@ export interface GameState {
   selectedPattern: PatternKey;
   roundLocked?: boolean;
   gameRound: number; // Tracks the current round sequence (increments on partial reset)
+  isPaused: boolean; // New: allows admin actions during a game
 }
 
 export const TOTAL_BALLS = 75;
