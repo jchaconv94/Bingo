@@ -268,15 +268,24 @@ const App: React.FC = () => {
     }
 
     const isWinningCard = winners.some(w => w.cardId === cardId);
+    
+    let message = `¿Seguro que deseas eliminar el cartón #${cardId}?`;
+    let title = 'Eliminar Cartón';
+    let type: 'danger' | 'warning' = 'danger';
+    
     if (isWinningCard) {
-       await showAlert({ title: 'Cartón Ganador', message: "Este cartón ha ganado un premio y no puede ser eliminado completamente.", type: 'warning' });
+       title = '¿Eliminar Cartón Ganador?';
+       // Combinamos el aviso con la confirmación en un solo paso
+       message = `⚠️ ESTE CARTÓN ES UN GANADOR.\n\nEliminarlo lo borrará del participante, pero el registro del premio histórico se mantendrá intacto.\n\n¿Estás seguro de eliminar el cartón #${cardId}?`;
+       type = 'warning';
     }
 
     const confirmed = await showConfirm({
-        title: 'Eliminar Cartón',
-        message: `¿Seguro que deseas eliminar el cartón #${cardId}?`,
-        type: 'danger',
-        confirmText: 'Eliminar'
+        title: title,
+        message: message,
+        type: type,
+        confirmText: 'Sí, eliminar',
+        cancelText: 'Cancelar'
     });
 
     if (!confirmed) return;
@@ -289,6 +298,10 @@ const App: React.FC = () => {
       }
       return p;
     }));
+
+    if (isWinningCard) {
+      addLog(`Cartón ganador #${cardId} eliminado manualmente del participante ${participantId}.`);
+    }
   };
 
   const handleDrawBall = async () => {
