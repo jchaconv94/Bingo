@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, Users, Medal, Ticket, Edit2, Trash2, Save, X, Eye, EyeOff, CreditCard, ChevronDown, ChevronUp, ScanEye, Phone, Fingerprint, MessageCircle, FileText } from 'lucide-react';
 import { Participant, Winner, BingoCard as BingoCardType, PatternKey, Prize } from '../types.ts';
@@ -54,7 +55,6 @@ const ParticipantsPanel: React.FC<Props> = ({
   } | null>(null);
 
   // State to control the details modal for PARTICIPANTS
-  // CHANGED: Now we store the ID, not the object, to ensure we always pull the latest data from props
   const [viewingParticipantId, setViewingParticipantId] = useState<string | null>(null);
 
   // Derive the active participant object from the fresh list
@@ -62,7 +62,7 @@ const ParticipantsPanel: React.FC<Props> = ({
     ? participants.find(p => p.id === viewingParticipantId) || null
     : null;
 
-  // Defensive filtering: convert fields to String before checking to prevent crashes if data is null/number
+  // Defensive filtering
   const filteredParticipants = participants.filter(p => {
     const term = search.toLowerCase();
     const name = String(p.name || '').toLowerCase();
@@ -104,14 +104,12 @@ const ParticipantsPanel: React.FC<Props> = ({
   };
 
   const toggleGlobalCards = () => {
-    // When toggling global, we clear individual overrides to "reset" the view to uniform
     setShowCardsGlobal(!showCardsGlobal);
     setExpandedStates({});
   };
 
   const toggleIndividualCard = (id: string) => {
     setExpandedStates(prev => {
-      // If currently undefined, it follows global. We want to invert that.
       const currentVisibility = prev[id] !== undefined ? prev[id] : showCardsGlobal;
       return { ...prev, [id]: !currentVisibility };
     });
@@ -144,12 +142,11 @@ const ParticipantsPanel: React.FC<Props> = ({
           onAddCard={() => onAddCard(viewingParticipant.id)}
           onSave={(data) => {
              onEditParticipant(viewingParticipant.id, data);
-             // We don't close the modal, allowing the user to see their changes
           }}
           onDelete={() => {
             if (window.confirm(`¿Estás seguro de eliminar a ${viewingParticipant.name}?`)) {
                onDeleteParticipant(viewingParticipant.id);
-               setViewingParticipantId(null); // Close modal as participant is gone
+               setViewingParticipantId(null);
             }
           }}
           onDeleteCard={onDeleteCard}
@@ -199,26 +196,85 @@ const ParticipantsPanel: React.FC<Props> = ({
 
           {/* Winners Section */}
           {winners.length > 0 && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 animate-in slide-in-from-top-2">
-              <h3 className="text-amber-400 text-xs font-bold flex items-center gap-2 mb-1.5">
-                <Medal size={14} /> GANADORES ({winners.length})
+            <div className="bg-slate-950/50 border border-amber-500/30 rounded-xl p-2 animate-in slide-in-from-top-2 shadow-lg">
+              <h3 className="text-amber-400 text-xs font-black tracking-wide flex items-center gap-2 mb-2 uppercase px-1">
+                <Medal size={14} className="drop-shadow-md" /> Ganadores Recientes ({winners.length})
               </h3>
-              <div className="max-h-20 overflow-y-auto custom-scrollbar space-y-1">
-                {winners.map((w, i) => (
-                  <div key={i} className="text-[10px] text-amber-100 bg-amber-900/40 px-2 py-1 rounded flex justify-between items-center group">
-                    <span className={hideParticipants ? "blur-sm select-none" : ""}>{w.participantName}</span>
-                    <div className="flex items-center gap-1">
-                      <span className="font-mono opacity-70">{w.cardId}</span>
-                      <button 
-                        onClick={() => handleViewWinner(w)}
-                        className="text-amber-400 hover:text-white hover:bg-amber-500/40 p-0.5 rounded transition-colors"
-                        title="Ver detalles"
-                      >
-                        <Eye size={12} />
-                      </button>
+              <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                {winners.map((w, i) => {
+                  // Extract amount logic
+                  let amountDisplay = "🏆";
+                  let currency = "S/";
+                  
+                  if (w.prizeDescription) {
+                     const match = w.prizeDescription.match(/(\d+(?:[.,]\d+)?)/);
+                     if (match) {
+                        // Simple formatting to avoid overly long numbers
+                        const val = parseFloat(match[0].replace(/,/g, ''));
+                        amountDisplay = val >= 1000 ? `${(val/1000).toFixed(1)}k` : match[0];
+                        
+                        if (w.prizeDescription.includes('$')) currency = '$';
+                        else if (w.prizeDescription.includes('€')) currency = '€';
+                     }
+                  }
+
+                  return (
+                    <div key={i} className="relative overflow-hidden bg-slate-900 border border-slate-700/50 p-2 rounded-lg flex items-stretch gap-3 group hover:border-amber-500/50 transition-all duration-300 shadow-sm">
+                       
+                       {/* 1. Monto Ganado (Cuadro Adelante) */}
+                       <div className="w-[4.5rem] bg-gradient-to-b from-amber-400 to-amber-600 rounded flex flex-col items-center justify-center text-slate-900 shadow-inner shrink-0 relative overflow-hidden">
+                          <div className="absolute top-0 inset-x-0 h-[1px] bg-white/40"></div>
+                          <span className="text-[8px] font-black uppercase text-amber-900/60 tracking-tighter mb-0 leading-none">PREMIO</span>
+                          <div className="flex items-start justify-center gap-0.5 leading-none mt-0.5">
+                             <span className="text-[9px] font-bold pt-0.5 opacity-70">{currency}</span>
+                             <span className={`font-black tracking-tighter ${amountDisplay.length > 3 ? 'text-lg' : 'text-2xl'}`}>{amountDisplay}</span>
+                          </div>
+                       </div>
+
+                       {/* 2. Información Central */}
+                       <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                          <div className="flex justify-between items-start">
+                             <h4 className={`text-sm font-bold text-white truncate pr-2 leading-tight ${hideParticipants ? "blur-md select-none" : ""}`}>
+                                {w.participantName}
+                             </h4>
+                             <span className="text-[10px] text-slate-500 font-mono whitespace-nowrap shrink-0">
+                                {new Date(w.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                             </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 mt-1">
+                             {/* Numero de Carton */}
+                             <div className="flex items-center gap-1.5 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
+                                <Ticket size={10} className="text-slate-500" />
+                                <span className="text-[10px] text-slate-400">
+                                   Cartón: <strong className="text-emerald-400 font-mono">{w.cardId}</strong>
+                                </span>
+                             </div>
+                             
+                             {/* Bolilla Ganadora */}
+                             {w.winningNumber && (
+                               <div className="flex items-center gap-1.5 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
+                                  <div className="w-3 h-3 rounded-full bg-amber-500 flex items-center justify-center text-[8px] text-slate-900 font-bold">
+                                    {w.winningNumber}
+                                  </div>
+                                  <span className="text-[10px] text-slate-400">Bolilla</span>
+                               </div>
+                             )}
+                          </div>
+                       </div>
+
+                       {/* 3. Boton Ver */}
+                       <button 
+                          onClick={() => handleViewWinner(w)}
+                          className="self-center flex-shrink-0 w-7 h-7 flex items-center justify-center rounded bg-slate-800 text-slate-400 hover:bg-cyan-900/50 hover:text-cyan-400 transition-colors border border-slate-700"
+                          title="Ver detalles"
+                       >
+                          <Eye size={14} />
+                       </button>
+
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -238,7 +294,6 @@ const ParticipantsPanel: React.FC<Props> = ({
         {/* List */}
         <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
           {filteredParticipants.map(p => {
-             // Determine visibility: Override exists ? use Override : use Global
              const isExpanded = expandedStates[p.id] !== undefined ? expandedStates[p.id] : showCardsGlobal;
              const isEditing = editingId === p.id;
              
@@ -316,7 +371,7 @@ const ParticipantsPanel: React.FC<Props> = ({
                   </div>
                 </div>
                 
-                {/* Card Footer: Actions Toolbar (Only show if not editing inline) */}
+                {/* Card Footer */}
                 {!isEditing && (
                   <div className="bg-slate-900/30 border-t border-slate-800/50 px-3 py-1.5 flex items-center justify-between gap-2">
                     
@@ -384,7 +439,6 @@ const ParticipantsPanel: React.FC<Props> = ({
                   </div>
                 )}
                 
-                {/* Expanded Cards Section */}
                 {isExpanded && (
                   <div className="p-2 pt-2 grid grid-cols-2 gap-2 animate-in slide-in-from-top-1 duration-200 border-t border-slate-800/50 bg-slate-950/30">
                     {p.cards.map(card => (

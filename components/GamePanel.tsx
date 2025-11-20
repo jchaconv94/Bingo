@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, RotateCcw, Trophy, Hash, History, LayoutGrid, Eye, X, Star, Gift, CheckCircle, Circle } from 'lucide-react';
 import { PatternKey, WinPattern, Prize } from '../types.ts';
@@ -255,7 +256,7 @@ const GamePanel: React.FC<Props> = ({
           
           {/* Left Column: Prizes List (Visual Integration) - REDUCED WIDTH */}
           {prizes.length > 0 && (
-             <div className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-48 hidden lg:flex flex-col gap-2 max-h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden px-2 py-1">
+             <div className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-48 hidden lg:flex flex-col gap-2 max-h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pl-2 pr-3 py-1">
                 {prizes.map((prize, idx) => {
                   // Logic to highlight the NEXT prize to be won
                   const previousWon = idx === 0 || prizes[idx - 1].isAwarded;
@@ -268,7 +269,7 @@ const GamePanel: React.FC<Props> = ({
                       className={`
                         relative p-2 rounded-lg border backdrop-blur-md cursor-pointer transition-all duration-300
                         ${prize.isAwarded 
-                          ? 'bg-slate-900/40 border-slate-800 text-slate-500 grayscale opacity-70' 
+                          ? 'bg-slate-900/40 border-slate-800 text-slate-500 opacity-70' 
                           : isNext 
                              ? 'bg-amber-950/80 border-amber-400 border shadow-[0_0_15px_rgba(245,158,11,0.25)] scale-105 z-10' 
                              : 'bg-slate-900/60 border-slate-700 text-slate-300 opacity-80'
@@ -276,8 +277,13 @@ const GamePanel: React.FC<Props> = ({
                       `}
                     >
                       {isNext && (
-                        <div className="absolute -top-2 -right-1 bg-amber-500 text-amber-950 text-[8px] font-black px-1 py-0.5 rounded shadow-sm animate-pulse">
+                        <div className="absolute -top-2 right-0 bg-amber-500 text-amber-950 text-[8px] font-black px-1 py-0.5 rounded shadow-sm animate-pulse">
                            JUGANDO
+                        </div>
+                      )}
+                      {prize.isAwarded && (
+                        <div className="absolute -top-2 right-0 bg-emerald-600 text-white text-[8px] font-black px-1 py-0.5 rounded shadow-sm z-10">
+                           ENTREGADO
                         </div>
                       )}
                       <div className="flex items-start gap-2">

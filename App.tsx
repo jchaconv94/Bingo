@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Participant, GameState, Winner, TOTAL_BALLS, NUMBERS_PER_CARD, BingoCard, PatternKey, Prize } from './types.ts';
@@ -171,7 +172,8 @@ const App: React.FC = () => {
       });
     }
 
-    setParticipants(prev => [...prev, newParticipant]);
+    // Insertar AL PRINCIPIO de la lista
+    setParticipants(prev => [newParticipant, ...prev]);
     setGameState(prev => ({ ...prev, lastCardSequence: currentSeq }));
     addLog(`Registrado ${newParticipant.name} con ${cardsCount} cartones`);
   };
@@ -213,10 +215,11 @@ const App: React.FC = () => {
       if (p.id === participantId) {
         return {
           ...p,
-          cards: [...p.cards, {
+          // Insertar nuevo cartón AL PRINCIPIO del array de cartones
+          cards: [{
             id: newCardId,
             numbers: generateBingoCardNumbers()
-          }]
+          }, ...p.cards]
         };
       }
       return p;
@@ -503,7 +506,8 @@ const App: React.FC = () => {
       }
 
       if (window.confirm(`Importar ${uniqueNewParticipants.length} nuevos participantes? (${duplicatesCount} duplicados)`)) {
-        setParticipants(prev => [...prev, ...uniqueNewParticipants]);
+        // Insertar importados AL PRINCIPIO
+        setParticipants(prev => [...uniqueNewParticipants, ...prev]);
         
         let maxSeq = gameState.lastCardSequence;
         uniqueNewParticipants.forEach(p => p.cards.forEach(c => {
