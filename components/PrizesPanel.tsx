@@ -1,7 +1,7 @@
-
 import React, { useState, useRef } from 'react';
 import { Gift, Plus, Trash2, CheckCircle, Circle, DollarSign, Edit2, Save, X } from 'lucide-react';
 import { Prize } from '../types.ts';
+import { useAlert } from '../contexts/AlertContext.tsx';
 
 interface Props {
   prizes: Prize[];
@@ -12,36 +12,30 @@ interface Props {
 }
 
 const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEditPrize, onTogglePrize }) => {
+  const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     name: '',
     description: ''
   });
 
-  const nameInputRef = useRef<HTMLInputElement>(null); // Referencia para el foco
+  const nameInputRef = useRef<HTMLInputElement>(null); 
 
-  // Estado para controlar qué premio se está editando
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', description: '' });
 
-  // Auto-sugerir nombre basado en la cantidad actual
   const getNextName = () => `Premio ${String(prizes.length + 1).padStart(2, '0')}`;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.description) return;
 
-    // Si el nombre está vacío, usar el sugerido
     const nameToUse = formData.name.trim() || getNextName();
-    
-    // Formatear el monto a S/.0.00
     const amountValue = parseFloat(formData.description);
     
-    // Validación simple para asegurar que es un número válido
     if (isNaN(amountValue)) return;
 
-    // Validación de rango: 1 a 10000
     if (amountValue < 1 || amountValue > 10000) {
-      alert("El monto del premio debe estar entre 1 y 10,000");
+      await showAlert({ title: 'Monto Inválido', message: "El monto del premio debe estar entre 1 y 10,000", type: 'warning' });
       return;
     }
 
@@ -50,7 +44,6 @@ const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEdi
     onAddPrize(nameToUse, formattedDescription);
     setFormData({ name: '', description: '' });
     
-    // Regresar el foco al input de nombre
     setTimeout(() => {
         nameInputRef.current?.focus();
     }, 0);
@@ -85,7 +78,6 @@ const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEdi
         </span>
       </div>
 
-      {/* Formulario */}
       <form onSubmit={handleSubmit} className="bg-slate-950/50 p-3 rounded-xl border border-slate-800/50 space-y-3">
         <div>
           <input
@@ -94,7 +86,7 @@ const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEdi
             value={formData.name}
             onChange={e => setFormData({...formData, name: e.target.value})}
             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 outline-none placeholder-slate-600"
-            placeholder={getNextName()} // Placeholder dinámico
+            placeholder={getNextName()}
           />
         </div>
         <div className="flex gap-2">
@@ -122,7 +114,6 @@ const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEdi
         </div>
       </form>
 
-      {/* Lista de Premios */}
       <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
         {prizes.length === 0 && (
           <div className="text-center text-xs text-slate-600 py-4 italic border border-dashed border-slate-800 rounded-lg">
@@ -145,7 +136,6 @@ const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEdi
               `}
             >
               {isEditing ? (
-                /* MODO EDICIÓN */
                 <div className="flex-1 flex flex-col gap-2 animate-in fade-in duration-200">
                   <input 
                     value={editForm.name}
@@ -169,7 +159,6 @@ const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEdi
                   </div>
                 </div>
               ) : (
-                /* MODO VISUALIZACIÓN */
                 <>
                   <div className="flex items-center gap-3 min-w-0">
                     <button 

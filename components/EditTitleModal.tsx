@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import { X, Type, Save, AlignLeft, RotateCcw } from 'lucide-react';
+import { useAlert } from '../contexts/AlertContext.tsx';
 
 interface Props {
   currentTitle: string;
@@ -10,6 +10,7 @@ interface Props {
 }
 
 const EditTitleModal: React.FC<Props> = ({ currentTitle, currentSubtitle, onSave, onClose }) => {
+  const { showConfirm } = useAlert();
   const [title, setTitle] = useState(currentTitle);
   const [subtitle, setSubtitle] = useState(currentSubtitle);
 
@@ -18,8 +19,14 @@ const EditTitleModal: React.FC<Props> = ({ currentTitle, currentSubtitle, onSave
     onSave(title, subtitle);
   };
 
-  const handleReset = () => {
-    if (window.confirm("¿Restaurar título y descripción originales?")) {
+  const handleReset = async () => {
+    const confirmed = await showConfirm({
+        title: 'Restaurar',
+        message: "¿Restaurar título y descripción originales?",
+        confirmText: 'Sí, restaurar',
+        type: 'warning'
+    });
+    if (confirmed) {
       setTitle("VIRTUAL BINGO PRO");
       setSubtitle("Aplicación web de bingo virtual");
     }

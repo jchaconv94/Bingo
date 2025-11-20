@@ -4,6 +4,7 @@ import { Participant, Winner, BingoCard as BingoCardType, PatternKey, Prize } fr
 import BingoCard from './BingoCard.tsx';
 import WinnerDetailsModal from './WinnerDetailsModal.tsx';
 import ParticipantDetailsModal from './ParticipantDetailsModal.tsx';
+import { useAlert } from '../contexts/AlertContext.tsx';
 
 interface Props {
   participants: Participant[];
@@ -36,6 +37,7 @@ const ParticipantsPanel: React.FC<Props> = ({
   onShareAllCards,
   prizes = []
 }) => {
+  const { showAlert, showConfirm } = useAlert();
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', surname: '', dni: '', phone: '' });
@@ -46,22 +48,18 @@ const ParticipantsPanel: React.FC<Props> = ({
   // Individual visibility overrides (id -> boolean)
   const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
   
-  // State to control the details modal for WINNERS
   const [viewingWinnerData, setViewingWinnerData] = useState<{
     winner: Winner;
     participant: Participant;
     card: BingoCardType;
   } | null>(null);
 
-  // State to control the details modal for PARTICIPANTS
   const [viewingParticipantId, setViewingParticipantId] = useState<string | null>(null);
 
-  // Derive the active participant object from the fresh list
   const viewingParticipant = viewingParticipantId 
     ? participants.find(p => p.id === viewingParticipantId) || null
     : null;
 
-  // Defensive filtering
   const filteredParticipants = participants.filter(p => {
     const term = search.toLowerCase();
     const name = String(p.name || '').toLowerCase();
@@ -91,10 +89,7 @@ const ParticipantsPanel: React.FC<Props> = ({
   const handleViewWinner = (winner: Winner) => {
     const participant = participants.find(p => p.id === winner.participantId);
     if (participant) {
-      // Try to find the LIVE card
       let card = participant.cards.find(c => c.id === winner.cardId);
-      
-      // If live card is missing (deleted), try to use the Snapshot
       if (!card && winner.cardSnapshot) {
          card = winner.cardSnapshot;
       }
@@ -102,10 +97,10 @@ const ParticipantsPanel: React.FC<Props> = ({
       if (card) {
         setViewingWinnerData({ winner, participant, card });
       } else {
-        alert("El cartón ganador ha sido eliminado y no se encontró un registro histórico.");
+        showAlert({ title: 'Cartón no encontrado', message: "El cartón ganador ha sido eliminado y no se encontró un registro histórico.", type: 'warning' });
       }
     } else {
-      alert("El participante parece haber sido eliminado.");
+      showAlert({ title: 'Participante no encontrado', message: "El participante parece haber sido eliminado.", type: 'warning' });
     }
   };
 
@@ -150,10 +145,9 @@ const ParticipantsPanel: React.FC<Props> = ({
              onEditParticipant(viewingParticipant.id, data);
           }}
           onDelete={() => {
-            if (window.confirm(`¿Estás seguro de eliminar a ${viewingParticipant.name}?`)) {
+              // Participant details handles its own delete confirmation now via App logic when calling this
                onDeleteParticipant(viewingParticipant.id);
                setViewingParticipantId(null);
-            }
           }}
           onDeleteCard={onDeleteCard}
           onDownloadCard={onDownloadCard}
@@ -295,19 +289,15 @@ const ParticipantsPanel: React.FC<Props> = ({
                 key={p.id} 
                 className="relative bg-slate-900 rounded-xl border border-slate-800 hover:border-cyan-500/30 transition-all duration-300 shadow-sm group flex flex-col overflow-hidden"
               >
-                {/* Header Stripe Decoration */}
                 <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-slate-700 to-slate-800 group-hover:from-cyan-500 group-hover:to-blue-600 transition-colors duration-300"></div>
 
-                {/* Card Body: Avatar & Info */}
                 <div className="p-3 pl-5 flex items-start gap-3 relative">
                   
-                  {/* Card Counter Badge (Top Right) */}
                   <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-md border border-slate-800 shadow-inner">
                      <Ticket size={12} className="text-emerald-500" />
                      <span className="text-xs font-bold text-emerald-400 font-mono">{p.cards.length}</span>
                   </div>
 
-                  {/* Avatar */}
                   <div className="w-11 h-11 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 group-hover:border-cyan-500/50 flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0 transition-colors z-10">
                     {String(p.name || '?').charAt(0).toUpperCase()}
                   </div>
@@ -361,7 +351,6 @@ const ParticipantsPanel: React.FC<Props> = ({
                           {p.name} {p.surname}
                         </h3>
                         
-                        {/* Tags Row */}
                         <div className={`flex flex-wrap gap-2 ${hideParticipants ? 'blur-sm select-none' : ''}`}>
                           <span className="flex items-center gap-1.5 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[9px] text-slate-400 font-medium" title="DNI">
                             <Fingerprint size={10} className="text-slate-500"/> 
@@ -379,11 +368,9 @@ const ParticipantsPanel: React.FC<Props> = ({
                   </div>
                 </div>
                 
-                {/* Action Bar (Footer) */}
                 {!isEditing && (
                   <div className="bg-slate-950/30 border-t border-slate-800 pl-5 pr-3 py-1.5 flex items-center justify-between gap-2">
                     
-                    {/* Expand/Collapse Toggle */}
                     <button 
                       onClick={() => toggleIndividualCard(p.id)}
                       className={`
@@ -439,8 +426,14 @@ const ParticipantsPanel: React.FC<Props> = ({
                       <div className="w-px h-4 bg-slate-800 mx-1"></div>
 
                       <button 
-                        onClick={() => {
-                           if (window.confirm(`¿Estás seguro de añadir un cartón extra a ${p.name} ${p.surname}?`)) {
+                        onClick={async () => {
+                           const confirm = await showConfirm({ 
+                               title: 'Cartón Extra', 
+                               message: `¿Estás seguro de añadir un cartón extra a ${p.name} ${p.surname}?`,
+                               type: 'confirm',
+                               confirmText: 'Sí, añadir'
+                           });
+                           if (confirm) {
                               onAddCard(p.id);
                            }
                         }}

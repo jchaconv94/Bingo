@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Participant, GameState, Winner, TOTAL_BALLS, NUMBERS_PER_CARD, BingoCard, PatternKey, Prize } from './types.ts';
@@ -12,6 +11,7 @@ import WinnerDetailsModal from './components/WinnerDetailsModal.tsx';
 import PrizesPanel from './components/PrizesPanel.tsx';
 import EditTitleModal from './components/EditTitleModal.tsx';
 import { Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, Edit, X } from 'lucide-react';
+import { useAlert } from './contexts/AlertContext.tsx';
 
 // LocalStorage Keys
 const LS_KEYS = {
@@ -35,9 +35,9 @@ const loadFromStorage = <T,>(key: string, fallback: T): T => {
 };
 
 const App: React.FC = () => {
+  const { showAlert, showConfirm } = useAlert();
+
   // --- State con Inicialización Perezosa ---
-  // Leemos el localStorage DIRECTAMENTE al iniciar. Si existe, se usa; si no, usa el valor por defecto.
-  
   const [participants, setParticipants] = useState<Participant[]>(() => 
     loadFromStorage(LS_KEYS.PARTICIPANTS, [])
   );
@@ -49,11 +49,10 @@ const App: React.FC = () => {
       lastCardSequence: 100,
       selectedPattern: 'NONE' as PatternKey,
       roundLocked: false,
-      gameRound: 1, // START AT ROUND 1
+      gameRound: 1,
       isPaused: false
     };
     const loaded = loadFromStorage(LS_KEYS.GAME_STATE, defaults);
-    // Ensure new property exists if loaded from old state
     return { ...defaults, ...loaded, isPaused: loaded.isPaused || false };
   });
 
@@ -74,11 +73,7 @@ const App: React.FC = () => {
   );
 
   const [showTitleModal, setShowTitleModal] = useState(false);
-
-  // Estado para el modal de RESUMEN de ganadores (cuando salen nuevos ganadores)
   const [currentBatchWinners, setCurrentBatchWinners] = useState<Winner[]>([]);
-
-  // Estado para ver el DETALLE de un ganador (desde el modal resumen o cualquier otro lado)
   const [viewingDetailsData, setViewingDetailsData] = useState<{
     winner: Winner;
     participant: Participant;
@@ -86,34 +81,16 @@ const App: React.FC = () => {
   } | null>(null);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(false); // Default closed for floating behavior
+  const [showSidebar, setShowSidebar] = useState(false);
 
-  // --- Persistence (Solo Guardar) ---
-  useEffect(() => {
-    localStorage.setItem(LS_KEYS.PARTICIPANTS, JSON.stringify(participants));
-  }, [participants]);
+  // --- Persistence ---
+  useEffect(() => { localStorage.setItem(LS_KEYS.PARTICIPANTS, JSON.stringify(participants)); }, [participants]);
+  useEffect(() => { localStorage.setItem(LS_KEYS.GAME_STATE, JSON.stringify(gameState)); }, [gameState]);
+  useEffect(() => { localStorage.setItem(LS_KEYS.WINNERS, JSON.stringify(winners)); }, [winners]);
+  useEffect(() => { localStorage.setItem(LS_KEYS.PRIZES, JSON.stringify(prizes)); }, [prizes]);
+  useEffect(() => { localStorage.setItem(LS_KEYS.TITLE, JSON.stringify(bingoTitle)); }, [bingoTitle]);
+  useEffect(() => { localStorage.setItem(LS_KEYS.SUBTITLE, JSON.stringify(bingoSubtitle)); }, [bingoSubtitle]);
 
-  useEffect(() => {
-    localStorage.setItem(LS_KEYS.GAME_STATE, JSON.stringify(gameState));
-  }, [gameState]);
-
-  useEffect(() => {
-    localStorage.setItem(LS_KEYS.WINNERS, JSON.stringify(winners));
-  }, [winners]);
-
-  useEffect(() => {
-    localStorage.setItem(LS_KEYS.PRIZES, JSON.stringify(prizes));
-  }, [prizes]);
-
-  useEffect(() => {
-    localStorage.setItem(LS_KEYS.TITLE, JSON.stringify(bingoTitle));
-  }, [bingoTitle]);
-
-  useEffect(() => {
-    localStorage.setItem(LS_KEYS.SUBTITLE, JSON.stringify(bingoSubtitle));
-  }, [bingoSubtitle]);
-
-  // Listen for fullscreen changes
   useEffect(() => {
     const handleFullScreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -122,17 +99,11 @@ const App: React.FC = () => {
     return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
   }, []);
 
-  // --- Actions ---
-
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-      });
+      document.documentElement.requestFullscreen().catch(err => console.error(err));
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
+      if (document.exitFullscreen) document.exitFullscreen();
     }
   };
 
@@ -154,9 +125,15 @@ const App: React.FC = () => {
     });
   };
 
-  const handlePatternChange = (pattern: PatternKey) => {
+  const handlePatternChange = async (pattern: PatternKey) => {
     if (gameState.drawnBalls.length > 0) {
-       if (!window.confirm("¿Cambiar el patrón a mitad de juego? Esto no afectará las bolillas ya sorteadas, pero cambiará las condiciones de victoria.")) return;
+       const confirmed = await showConfirm({
+         title: '¿Cambiar Patrón?',
+         message: "El juego está en curso. Cambiar el patrón no afectará las bolillas, pero cambiará las condiciones para ganar.",
+         type: 'warning',
+         confirmText: 'Sí, cambiar'
+       });
+       if (!confirmed) return;
     }
     setGameState(prev => ({ ...prev, selectedPattern: pattern }));
     addLog(`Patrón de victoria cambiado a: ${pattern}`);
@@ -165,7 +142,7 @@ const App: React.FC = () => {
   const handleRegister = (data: Omit<Participant, 'id' | 'cards'>, cardsCount: number) => {
     const isDuplicate = participants.some(p => p.dni.trim().toLowerCase() === data.dni.trim().toLowerCase());
     if (isDuplicate) {
-      alert(`Ya existe un participante con el DNI ${data.dni}.`);
+      showAlert({ title: 'DNI Duplicado', message: `Ya existe un participante con el DNI ${data.dni}.`, type: 'warning' });
       return;
     }
 
@@ -184,7 +161,6 @@ const App: React.FC = () => {
       });
     }
 
-    // Insertar AL PRINCIPIO de la lista
     setParticipants(prev => [newParticipant, ...prev]);
     setGameState(prev => ({ ...prev, lastCardSequence: currentSeq }));
     addLog(`Registrado ${newParticipant.name} con ${cardsCount} cartones`);
@@ -197,50 +173,66 @@ const App: React.FC = () => {
     addLog(`Participante editado: ${data.name} ${data.surname}`);
   };
 
-  const handleDeleteParticipant = (id: string) => {
+  const handleDeleteParticipant = async (id: string) => {
     const p = participants.find(p => p.id === id);
     if (!p) return;
 
-    // 1. Validar si el participante YA ES GANADOR
     const isWinner = winners.some(w => w.participantId === id);
     if (isWinner) {
-       alert(`🚫 ACCIÓN DENEGADA\n\nNo puedes eliminar a ${p.name} porque ya ha ganado un premio.\nEl historial de ganadores es sagrado.`);
+       await showAlert({ title: 'Acción Denegada', message: `No puedes eliminar a ${p.name} porque ya ha ganado un premio. El historial de ganadores es sagrado.`, type: 'danger' });
        return;
     }
 
-    // 2. Validar si hay juego en curso (Premios Activos/Bolillas Sorteadas) Y NO ESTÁ PAUSADO
-    // STRICT CHECK: If any ball is drawn, game is considered in progress, requiring PAUSE for deletions.
     const gameInProgress = gameState.drawnBalls.length > 0;
-    
     if (gameInProgress && !gameState.isPaused) {
-       alert(`⏸️ JUEGO EN CURSO\n\nPara eliminar participantes durante un sorteo activo, primero debes PAUSAR el juego usando el botón de Pausa en el panel de control.`);
+       await showAlert({ title: 'Juego en Curso', message: `Debes PAUSAR el sorteo antes de eliminar participantes.`, type: 'warning' });
        return;
     }
 
-    if (window.confirm(`¿Estás seguro de eliminar a ${p.name} ${p.surname}? Se eliminarán también sus cartones.`)) {
+    const confirmed = await showConfirm({
+        title: 'Eliminar Participante',
+        message: `¿Estás seguro de eliminar a ${p.name} ${p.surname}?\nSe eliminarán también sus cartones.`,
+        type: 'danger',
+        confirmText: 'Sí, eliminar'
+    });
+
+    if (confirmed) {
       setParticipants(prev => prev.filter(p => p.id !== id));
       addLog(`Participante eliminado: ${p.name} ${p.surname}`);
     }
   };
 
-  const handleDeleteAllParticipants = () => {
+  const handleDeleteAllParticipants = async () => {
     if (participants.length === 0) return;
 
-    // 1. Validar si hay ganadores existentes
     if (winners.length > 0) {
-       alert("🚫 ACCIÓN DENEGADA\n\nNo puedes borrar a todos los participantes porque ya existen ganadores registrados. Debes resetear el evento completo primero.");
+       await showAlert({ title: 'Acción Denegada', message: "No puedes borrar a todos porque existen ganadores. Debes resetear el evento primero.", type: 'danger' });
        return;
     }
 
-    // 2. Validar juego activo
     const gameInProgress = gameState.drawnBalls.length > 0;
     if (gameInProgress && !gameState.isPaused) {
-       alert(`⏸️ JUEGO EN CURSO\n\nDebes PAUSAR o RESETEAR el sorteo antes de eliminar masivamente.`);
+       await showAlert({ title: 'Juego en Curso', message: `Debes PAUSAR o RESETEAR el sorteo antes de eliminar masivamente.`, type: 'warning' });
        return;
     }
 
-    if (window.confirm("¡PELIGRO! ESTA ACCIÓN ES IRREVERSIBLE.\n\n¿Estás seguro de que deseas ELIMINAR A TODOS LOS PARTICIPANTES y sus cartones?")) {
-      if (window.confirm("Confirma por segunda vez: ¿Borrar TODO?")) {
+    const confirmed1 = await showConfirm({
+        title: '¡PELIGRO!',
+        message: "Esta acción ELIMINARÁ A TODOS los participantes y sus cartones.\n¿Estás seguro?",
+        type: 'danger',
+        confirmText: 'Entendido, continuar',
+        cancelText: 'Cancelar'
+    });
+
+    if (confirmed1) {
+      const confirmed2 = await showConfirm({
+          title: 'Confirmación Final',
+          message: "¿Borrar absolutamente TODO?",
+          type: 'danger',
+          confirmText: 'SÍ, BORRAR TODO'
+      });
+      
+      if (confirmed2) {
         setParticipants([]);
         addLog("⚠️ Se han eliminado todos los participantes del sistema.");
       }
@@ -248,8 +240,6 @@ const App: React.FC = () => {
   };
 
   const handleAddCard = (participantId: string) => {
-    // FIX: Calculate new ID based on current state BEFORE calling setters.
-    // This prevents race conditions where newCardId would be empty in production builds.
     const newSeq = gameState.lastCardSequence + 1;
     const newCardId = `C${newSeq.toString().padStart(4, '0')}`;
 
@@ -259,7 +249,6 @@ const App: React.FC = () => {
       if (p.id === participantId) {
         return {
           ...p,
-          // Insertar nuevo cartón AL PRINCIPIO del array de cartones
           cards: [{
             id: newCardId,
             numbers: generateBingoCardNumbers()
@@ -270,22 +259,26 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleDeleteCard = (participantId: string, cardId: string) => {
-    // Validar si el juego está activo y no pausado (STRICT CHECK)
+  const handleDeleteCard = async (participantId: string, cardId: string) => {
     const gameInProgress = gameState.drawnBalls.length > 0;
-    
     if (gameInProgress && !gameState.isPaused) {
-       alert(`⏸️ PAUSA REQUERIDA\n\nPara eliminar cartones durante el juego, primero debes PAUSAR.`);
+       await showAlert({ title: 'Pausa Requerida', message: `Para eliminar cartones durante el juego, primero debes PAUSAR.`, type: 'warning' });
        return;
     }
 
-    // Validar si este cartón es ganador (aunque la lógica principal ya protege al ganador)
     const isWinningCard = winners.some(w => w.cardId === cardId);
     if (isWinningCard) {
-       alert("🚫 Este cartón ha ganado un premio y no puede ser eliminado completamente (aunque se elimine del usuario, quedará en el histórico de ganadores).");
+       await showAlert({ title: 'Cartón Ganador', message: "Este cartón ha ganado un premio y no puede ser eliminado completamente.", type: 'warning' });
     }
 
-    if (!window.confirm("¿Seguro que deseas eliminar este cartón?")) return;
+    const confirmed = await showConfirm({
+        title: 'Eliminar Cartón',
+        message: `¿Seguro que deseas eliminar el cartón #${cardId}?`,
+        type: 'danger',
+        confirmText: 'Eliminar'
+    });
+
+    if (!confirmed) return;
     setParticipants(prev => prev.map(p => {
       if (p.id === participantId) {
         return {
@@ -297,26 +290,25 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleDrawBall = () => {
+  const handleDrawBall = async () => {
     if (gameState.isPaused) {
-      alert("El juego está pausado. Reanúdalo para continuar el sorteo.");
+      await showAlert({ title: 'Pausado', message: "El juego está pausado. Reanúdalo para continuar.", type: 'info' });
       return;
     }
 
     if (participants.length === 0) {
-      alert("¡Atención! No hay participantes registrados.");
+      await showAlert({ title: 'Sin Participantes', message: "No hay participantes registrados.", type: 'warning' });
       return;
     }
     
     if (gameState.selectedPattern === 'NONE') {
-      alert("Debes seleccionar una forma de ganar (patrón) antes de sacar una bolilla.");
+      await showAlert({ title: 'Falta Patrón', message: "Debes seleccionar una forma de ganar (patrón) antes de sacar una bolilla.", type: 'warning' });
       return;
     }
 
-    // 1. Verificar si ya se entregaron todos los premios
     const allPrizesAwarded = prizes.length > 0 && prizes.every(p => p.isAwarded);
     if (allPrizesAwarded) {
-       alert("¡JUEGO COMPLETADO!\n\nTodos los premios han sido entregados. Debes resetear el sorteo para iniciar una nueva partida.");
+       await showAlert({ title: 'Evento Finalizado', message: "Todos los premios han sido entregados. Resetea el sorteo para jugar de nuevo.", type: 'success' });
        return;
     }
 
@@ -324,7 +316,7 @@ const App: React.FC = () => {
       .filter(n => !gameState.drawnBalls.includes(n));
     
     if (available.length === 0) {
-      alert("¡Se han sorteado todas las bolillas!");
+      await showAlert({ title: 'Fin de Bolillas', message: "¡Se han sorteado todas las bolillas!", type: 'info' });
       return;
     }
 
@@ -358,7 +350,6 @@ const App: React.FC = () => {
 
     const updatedBalls = [...gameState.drawnBalls, newBall];
     
-    // PASS THE CURRENT ROUND to checkWinners to allow same card winning in different rounds
     const potentialWinners = checkWinners(
        participants, 
        updatedBalls, 
@@ -368,17 +359,12 @@ const App: React.FC = () => {
     );
 
     if (potentialWinners.length > 0) {
-      
-      // --- AUTO AWARD LOGIC (Provisional, validated in Modal) ---
-      // Detectar el premio activo actual
       const activePrizeIndex = prizes.findIndex(p => !p.isAwarded);
       let currentPrize: Prize | null = null;
       let finalWinners = potentialWinners;
 
       if (activePrizeIndex !== -1) {
         currentPrize = prizes[activePrizeIndex];
-        
-        // Asignar el premio a los ganadores (Snapshot)
         finalWinners = potentialWinners.map(w => ({
            ...w,
            prizeId: currentPrize?.id,
@@ -386,21 +372,19 @@ const App: React.FC = () => {
            prizeDescription: currentPrize?.description
         }));
 
-        // Marcar premio como entregado automáticamente (Puede ser revertido en modal)
         setPrizes(prev => {
            const newPrizes = [...prev];
            newPrizes[activePrizeIndex] = { ...newPrizes[activePrizeIndex], isAwarded: true };
            return newPrizes;
         });
         
-        // IMPORTANT: Set roundLocked to true.
         setGameState(prev => ({
            ...prev,
            roundLocked: true,
            history: [...prev.history, `🛑 Ronda finalizada. Premio asignado provisionalmente.`]
         }));
         
-        addLog(`🎁 Premio Asignado (Pendiente Confirmar): ${currentPrize.name}`);
+        addLog(`🎁 Premio Asignado: ${currentPrize.name}`);
       }
 
       setWinners(prev => [...prev, ...finalWinners]);
@@ -417,55 +401,38 @@ const App: React.FC = () => {
     }
   };
 
-  // --- LOGICA DE VALIDACION DE GANADORES (NUEVA) ---
-
   const handleConfirmRound = () => {
-    // El usuario validó que todo está OK.
-    // Acciones: Resetear bolillas, limpiar patrón, incrementar ronda.
-    // El premio YA está marcado como entregado (se hizo al detectar ganador), así que lo dejamos así.
-    
     setGameState(prev => ({
       ...prev,
-      drawnBalls: [], // Reset Bolillas
+      drawnBalls: [],
       history: [...prev.history, "✅ Ronda Confirmada. Preparando siguiente juego."],
-      selectedPattern: 'NONE', // Limpiar patrón
-      roundLocked: false, // Desbloquear juego
-      gameRound: prev.gameRound + 1 // Avanzar ronda interna
+      selectedPattern: 'NONE',
+      roundLocked: false,
+      gameRound: prev.gameRound + 1
     }));
-    
     setCurrentBatchWinners([]);
     addLog("✅ Sorteo continuado. Bolillas reseteadas.");
   };
 
   const handleRejectWinner = (invalidWinner: Winner) => {
-    // Determinar si hay otros ganadores en el lote actual (concurrentes)
     const remainingInBatch = currentBatchWinners.filter(w => 
        !(w.cardId === invalidWinner.cardId && w.timestamp === invalidWinner.timestamp)
     );
 
-    // 1. Siempre eliminar al ganador inválido del historial global
     setWinners(prev => prev.filter(w => 
        !(w.cardId === invalidWinner.cardId && w.timestamp === invalidWinner.timestamp)
     ));
 
     if (remainingInBatch.length > 0) {
-       // ESCENARIO: Hay otros ganadores válidos en esta ronda.
-       // Acción: Solo eliminar a este ganador, mantener el estado del juego bloqueado/premiado para los demás.
        setCurrentBatchWinners(remainingInBatch);
-       addLog(`⚠️ Ganador invalidado: ${invalidWinner.participantName}. Quedan ${remainingInBatch.length} ganadores.`);
+       addLog(`⚠️ Ganador invalidado: ${invalidWinner.participantName}.`);
     } else {
-       // ESCENARIO: Era el único ganador (o el último que quedaba).
-       // Acción: Invalidar la ronda completamente.
-       
-       // 2. Reabrir el premio si fue asignado provisionalmente
        if (invalidWinner.prizeId) {
           setPrizes(prev => prev.map(p => 
              p.id === invalidWinner.prizeId ? { ...p, isAwarded: false } : p
           ));
           addLog(`↩️ Premio "${invalidWinner.prizeName}" reabierto.`);
        }
-
-       // 3. Resetear estado del juego (Void Round)
        setGameState(prev => ({
           ...prev,
           drawnBalls: [],
@@ -473,15 +440,12 @@ const App: React.FC = () => {
           selectedPattern: 'NONE',
           roundLocked: false
        }));
-
        setCurrentBatchWinners([]);
        addLog("⚠️ Ronda invalidada y reiniciada por falta de ganadores válidos.");
     }
   };
 
   const handleCloseWinnerModal = () => {
-    // Fallback close only (should normally use Confirm or Reject)
-    // If user clicks outside, we assume they want to review later, but game stays locked.
     setCurrentBatchWinners([]);
   };
 
@@ -492,54 +456,59 @@ const App: React.FC = () => {
       if (card) {
         setViewingDetailsData({ winner, participant, card });
       } else {
-        alert("Cartón no encontrado");
+        showAlert({ message: "Cartón no encontrado", type: 'danger' });
       }
     } else {
-      alert("Participante no encontrado");
+      showAlert({ message: "Participante no encontrado", type: 'danger' });
     }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     const pendingPrizesCount = prizes.filter(p => !p.isAwarded).length;
     const totalPrizes = prizes.length;
 
-    // ESCENARIO 1: Aún hay premios por jugar (Siguiente Ronda MANUAL)
-    // Esto es si el usuario cerró el modal sin confirmar y quiere resetear manualmente
     if (totalPrizes > 0 && pendingPrizesCount > 0) {
-       const confirmMsg = `¿Iniciar Sorteo por el SIGUIENTE PREMIO?\n\nAcciones:\n1. Se borrarán las bolillas sorteadas.\n2. Se mantendrá la lista de ganadores anteriores.\n3. La forma de ganar se reiniciará a vacío.`;
+       const confirmed = await showConfirm({
+           title: '¿Siguiente Ronda?',
+           message: "Se borrarán las bolillas pero se mantendrán los ganadores anteriores.\n¿Iniciar sorteo por el siguiente premio?",
+           confirmText: 'Sí, siguiente ronda',
+           type: 'info'
+       });
        
-       if (!window.confirm(confirmMsg)) return;
+       if (!confirmed) return;
 
-       // Resetear estado del juego: Borrar bolillas, Borrar Patrón, Quitar candado
        setGameState(prev => ({
           ...prev,
           drawnBalls: [],
           history: [],
           selectedPattern: 'NONE',
           roundLocked: false,
-          gameRound: prev.gameRound + 1, // INCREMENT ROUND TO ALLOW NEW WINNERS
+          gameRound: prev.gameRound + 1,
           isPaused: false
        }));
-       setCurrentBatchWinners([]); // Cerrar modal si estaba abierto
+       setCurrentBatchWinners([]);
        addLog("🔄 Iniciando nueva ronda para el siguiente premio.");
        return;
     }
 
-    // ESCENARIO 2: Reset Total
-    const confirmMsg = totalPrizes > 0 
-       ? "¡EVENTO COMPLETADO!\n\nTodos los premios han sido entregados.\n¿Deseas BORRAR TODO para iniciar un evento totalmente nuevo?"
-       : "¿Reiniciar el sorteo? Se borrará el progreso actual y la lista de ganadores.";
+    const confirmed = await showConfirm({
+        title: totalPrizes > 0 ? '¡Resetear Evento Completo!' : 'Resetear Sorteo',
+        message: totalPrizes > 0 
+           ? "Todos los premios han sido entregados.\n¿Deseas BORRAR TODO (ganadores, bolillas, historial) para iniciar un evento nuevo?"
+           : "¿Reiniciar el sorteo? Se borrará el progreso actual y la lista de ganadores.",
+        type: 'danger',
+        confirmText: 'Sí, BORRAR TODO'
+    });
 
-    if (!window.confirm(confirmMsg)) return;
+    if (!confirmed) return;
 
-    // Limpieza Total
     setGameState(prev => ({
       ...prev,
       drawnBalls: [],
       history: [],
       selectedPattern: 'NONE',
       roundLocked: false,
-      gameRound: 1, // RESET ROUND TO 1
+      gameRound: 1,
       isPaused: false
     }));
     setWinners([]);
@@ -566,12 +535,17 @@ const App: React.FC = () => {
       const duplicatesCount = imported.length - uniqueNewParticipants.length;
 
       if (uniqueNewParticipants.length === 0) {
-        alert(`No se importaron participantes. ${duplicatesCount} duplicados detectados.`);
+        await showAlert({ title: 'Importación Fallida', message: `No se importaron participantes. ${duplicatesCount} duplicados detectados.`, type: 'warning' });
         return;
       }
 
-      if (window.confirm(`Importar ${uniqueNewParticipants.length} nuevos participantes? (${duplicatesCount} duplicados)`)) {
-        // Insertar importados AL PRINCIPIO
+      const confirmed = await showConfirm({
+          title: 'Confirmar Importación',
+          message: `Se importarán ${uniqueNewParticipants.length} nuevos participantes.\n(${duplicatesCount} duplicados ignorados).`,
+          confirmText: 'Importar'
+      });
+
+      if (confirmed) {
         setParticipants(prev => [...uniqueNewParticipants, ...prev]);
         
         let maxSeq = gameState.lastCardSequence;
@@ -585,7 +559,7 @@ const App: React.FC = () => {
       }
     } catch (e) {
       console.error(e);
-      alert("Error al importar archivo.");
+      showAlert({ title: 'Error', message: "Error al leer el archivo Excel.", type: 'danger' });
     }
   };
 
@@ -594,7 +568,7 @@ const App: React.FC = () => {
     if (!card) return;
     try {
       await downloadCardImage(p, card, bingoTitle, bingoSubtitle);
-    } catch (e) { console.error(e); alert("Error al generar imagen"); }
+    } catch (e) { console.error(e); showAlert({ message: "Error al generar imagen", type: 'danger' }); }
   };
 
   const openWhatsApp = (phone: string, text: string) => {
@@ -613,18 +587,21 @@ const App: React.FC = () => {
         await generateBingoCardsPDF(p, bingoTitle, bingoSubtitle, cid);
         const message = `Hola ${p.name.toUpperCase()}, tu cartón de Bingo Virtual #${card.id} 📄\n\n¡Suerte! 🎱`;
         setTimeout(() => openWhatsApp(p.phone!, encodeURIComponent(message)), 1000);
-    } catch (e) { console.error(e); alert("Error generando PDF"); }
+    } catch (e) { console.error(e); showAlert({ message: "Error generando PDF", type: 'danger' }); }
   };
 
   const handleShareAllCards = async (p: Participant) => {
     if (!p.phone || p.cards.length === 0) return;
-    if (p.cards.length > 10 && !window.confirm("¿Generar muchos cartones?")) return;
+    if (p.cards.length > 10) {
+        const confirm = await showConfirm({ title: 'Muchos Cartones', message: `¿Seguro que quieres generar ${p.cards.length} cartones?`, type: 'warning' });
+        if (!confirm) return;
+    }
     addLog(`Generando PDF masivo para ${p.name}...`);
     try {
       await generateBingoCardsPDF(p, bingoTitle, bingoSubtitle);
       const message = `Hola ${p.name.toUpperCase()}, tus ${p.cards.length} cartones de Bingo Virtual 📄\n\n¡Suerte! 🎱`;
       setTimeout(() => openWhatsApp(p.phone!, encodeURIComponent(message)), 1000);
-    } catch (error) { console.error(error); alert("Error generando PDF"); }
+    } catch (error) { console.error(error); showAlert({ message: "Error generando PDF", type: 'danger' }); }
   };
 
   const handleAddPrize = (name: string, description: string) => {
@@ -640,51 +617,43 @@ const App: React.FC = () => {
     setPrizes(prev => prev.map(p => p.id === id ? { ...p, name, description } : p));
   };
 
-  const handleRemovePrize = (id: string) => {
+  const handleRemovePrize = async (id: string) => {
     const prizeToRemove = prizes.find(p => p.id === id);
-    // Validation: Cannot remove awarded prize
     if (prizeToRemove && prizeToRemove.isAwarded) {
-       alert("🚫 ACCIÓN BLOQUEADA\n\nNo se puede eliminar un premio que ya ha sido entregado.");
+       await showAlert({ title: 'Acción Bloqueada', message: "No se puede eliminar un premio que ya ha sido entregado.", type: 'danger' });
        return;
     }
 
     const lastPrize = prizes.length > 0 ? prizes[prizes.length - 1] : null;
     if (lastPrize && lastPrize.isAwarded) {
-       alert("🔒 EVENTO FINALIZADO\n\nEl último premio ya ha sido entregado. No es posible eliminar premios.");
+       await showAlert({ title: 'Evento Finalizado', message: "El último premio ya ha sido entregado. No es posible eliminar premios.", type: 'warning' });
        return;
     }
-    if (window.confirm('¿Eliminar este premio?')) {
+    
+    const confirmed = await showConfirm({ title: 'Eliminar Premio', message: "¿Estás seguro de eliminar este premio?", type: 'danger' });
+    if (confirmed) {
       setPrizes(prev => prev.filter(p => p.id !== id));
     }
   };
 
-  const handleTogglePrize = (id: string) => {
+  const handleTogglePrize = async (id: string) => {
     const prize = prizes.find(p => p.id === id);
     if (!prize) return;
 
-    // LOGICA REQUERIDA: BLOQUEO TOTAL DE MANIPULACIÓN MANUAL DE ESTADO
-    
     if (!prize.isAwarded) {
-       // Intentar marcar como entregado
-       alert("🚫 ACCIÓN MANUAL NO PERMITIDA\n\nLos premios se entregan AUTOMÁTICAMENTE cuando:\n1. El sistema detecta un ganador.\n2. Verificas al ganador.\n3. Confirmas el sorteo.");
-       return;
+       await showAlert({ title: 'Acción Manual No Permitida', message: "Los premios se entregan AUTOMÁTICAMENTE al detectar un ganador y confirmar el sorteo.", type: 'warning' });
     } else {
-       // Intentar desmarcar (ya está entregado)
-       alert("🔒 PREMIO CERRADO\n\nEste premio ya fue entregado automáticamente.\n\nSi hubo un error, debes INVALIDAR al ganador desde la alerta de Bingo para revertir el proceso.");
-       return;
+       await showAlert({ title: 'Premio Cerrado', message: "Este premio ya fue entregado. Para revertirlo, debes INVALIDAR al ganador desde el panel de victoria.", type: 'info' });
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      
-      {/* Backdrop */}
       <div 
         className={`fixed inset-0 bg-black/70 backdrop-blur-[2px] z-[90] transition-opacity duration-300 ${showSidebar ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setShowSidebar(false)}
       />
 
-      {/* Sidebar Responsive Width - W-FULL on Mobile, Fixed on Desktop, Scrollable */}
       <aside 
         className={`fixed top-0 left-0 h-full w-full sm:w-[450px] bg-slate-900/95 border-r border-slate-800 shadow-2xl z-[100] transform transition-transform duration-300 ease-out overflow-y-auto custom-scrollbar p-4 flex flex-col gap-6 ${showSidebar ? 'translate-x-0' : '-translate-x-full'}`}
       >
@@ -751,7 +720,6 @@ const App: React.FC = () => {
       {viewingDetailsData && (
         <WinnerDetailsModal 
           winner={viewingDetailsData.winner}
-          // MODIFIED: Pass the live participant data (if found) to allow reactive UI updates when cards are deleted
           participant={participants.find(p => p.id === viewingDetailsData.participant.id) || viewingDetailsData.participant}
           card={viewingDetailsData.card}
           drawnBalls={gameState.drawnBalls}
@@ -765,7 +733,6 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* Header */}
       <header className="bg-slate-900 border-b border-slate-800 py-3 px-6 flex items-center justify-between shadow-lg sticky top-0 z-20 h-14">
         <div className="flex items-center gap-4">
            <button 

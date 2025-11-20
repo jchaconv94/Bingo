@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, User, Ticket, Phone, CreditCard, Trash2, Edit2, Plus, Hash, Fingerprint, Save, XCircle, MessageCircle, FileText } from 'lucide-react';
 import { Participant, PatternKey } from '../types.ts';
 import BingoCard from './BingoCard.tsx';
+import { useAlert } from '../contexts/AlertContext.tsx';
 
 interface Props {
   participant: Participant;
@@ -30,6 +31,7 @@ const ParticipantDetailsModal: React.FC<Props> = ({
   onShareCard,
   onShareAllCards
 }) => {
+  const { showConfirm } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: participant.name,
@@ -38,8 +40,6 @@ const ParticipantDetailsModal: React.FC<Props> = ({
     phone: participant.phone || ''
   });
 
-  // Update form data if participant prop changes (though mostly handled by local state during edit)
-  // This ensures if we close and reopen, or if external updates happen, we sync.
   useEffect(() => {
     setFormData({
       name: participant.name,
@@ -68,7 +68,6 @@ const ParticipantDetailsModal: React.FC<Props> = ({
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
         
-        {/* Header Title */}
         <div className="bg-slate-950/50 px-6 py-4 border-b border-slate-800 flex justify-between items-center flex-shrink-0">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <User className="text-cyan-500" size={24} />
@@ -82,17 +81,13 @@ const ParticipantDetailsModal: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* Content */}
         <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
            
-           {/* Unified Profile Card */}
            <div className={`bg-gradient-to-br rounded-2xl border overflow-hidden mb-6 relative transition-colors duration-300 ${isEditing ? 'from-slate-900 to-slate-950 border-cyan-500/30' : 'from-slate-800 to-slate-900 border-slate-700'}`}>
-              {/* Decorative background glow */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
               <div className="flex flex-col md:flex-row">
                 
-                {/* Identity Section (Left) */}
                 <div className="p-6 flex items-center gap-5 md:border-r border-slate-700/50 flex-1 relative z-10">
                     <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-4xl shadow-lg shadow-cyan-900/30 flex-shrink-0">
                       {participant.name.charAt(0).toUpperCase()}
@@ -129,9 +124,7 @@ const ParticipantDetailsModal: React.FC<Props> = ({
                     </div>
                 </div>
 
-                {/* Stats Section (Right) - Clean & Unified */}
                 <div className="flex flex-row md:w-auto bg-slate-950/30 md:bg-transparent">
-                    {/* DNI */}
                     <div className="flex-1 md:w-40 p-4 md:p-6 flex flex-col justify-center items-center md:items-start border-r md:border-r-0 border-slate-700/50 relative group">
                        <div className="hidden md:block absolute left-0 top-4 bottom-4 w-px bg-slate-700/50"></div>
                        <div className="flex items-center gap-2 text-xs text-slate-500 uppercase tracking-wider mb-1 font-bold">
@@ -148,7 +141,6 @@ const ParticipantDetailsModal: React.FC<Props> = ({
                        )}
                     </div>
 
-                    {/* Phone */}
                     <div className="flex-1 md:w-44 p-4 md:p-6 flex flex-col justify-center items-center border-r md:border-r-0 border-slate-700/50 relative">
                        <div className="hidden md:block absolute left-0 top-4 bottom-4 w-px bg-slate-700/50"></div>
                        <div className="flex items-center gap-2 text-xs text-slate-500 uppercase tracking-wider mb-1 font-bold">
@@ -167,7 +159,6 @@ const ParticipantDetailsModal: React.FC<Props> = ({
                        )}
                     </div>
 
-                    {/* Cards Count (Read Only) */}
                     <div className="flex-1 md:w-40 p-4 md:p-6 flex flex-col justify-center items-center bg-emerald-900/10 relative">
                        <div className="hidden md:block absolute left-0 top-4 bottom-4 w-px bg-slate-700/50"></div>
                        <div className="flex items-center gap-2 text-xs text-emerald-400/80 uppercase tracking-wider mb-1 font-bold">
@@ -179,7 +170,6 @@ const ParticipantDetailsModal: React.FC<Props> = ({
               </div>
            </div>
 
-           {/* Action Toolbar - Swaps based on isEditing state */}
            {isEditing ? (
               <div className="grid grid-cols-2 gap-4 mb-8">
                 <button 
@@ -201,8 +191,13 @@ const ParticipantDetailsModal: React.FC<Props> = ({
            ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                   <button 
-                    onClick={() => {
-                      if (window.confirm(`¿Estás seguro de añadir un cartón extra a ${participant.name} ${participant.surname}?`)) {
+                    onClick={async () => {
+                      const confirm = await showConfirm({ 
+                          title: 'Agregar Cartón',
+                          message: `¿Estás seguro de añadir un cartón extra a ${participant.name} ${participant.surname}?`,
+                          confirmText: 'Sí, añadir'
+                      });
+                      if (confirm) {
                         onAddCard();
                       }
                     }}
@@ -248,7 +243,6 @@ const ParticipantDetailsModal: React.FC<Props> = ({
               </div>
            )}
 
-           {/* Cards Section */}
            <div>
              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -283,12 +277,17 @@ const ParticipantDetailsModal: React.FC<Props> = ({
                    <Ticket size={48} className="mb-4 opacity-20" />
                    <p>Este participante no tiene cartones asignados.</p>
                    <button 
-                      onClick={() => {
-                        if (window.confirm(`¿Estás seguro de añadir un cartón extra a ${participant.name} ${participant.surname}?`)) {
+                    onClick={async () => {
+                        const confirm = await showConfirm({ 
+                            title: 'Agregar Cartón',
+                            message: `¿Estás seguro de añadir un cartón extra a ${participant.name} ${participant.surname}?`,
+                            confirmText: 'Sí, añadir'
+                        });
+                        if (confirm) {
                           onAddCard();
                         }
-                      }} 
-                      className="mt-4 text-emerald-500 hover:text-emerald-400 text-sm font-medium underline"
+                    }} 
+                    className="mt-4 text-emerald-500 hover:text-emerald-400 text-sm font-medium underline"
                    >
                       Asignar un cartón ahora
                    </button>

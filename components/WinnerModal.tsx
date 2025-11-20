@@ -1,43 +1,48 @@
-
 import React from 'react';
 import { Trophy, Sparkles, Check, Eye, Hash, UserX } from 'lucide-react';
 import { Winner } from '../types.ts';
+import { useAlert } from '../contexts/AlertContext.tsx';
 
 interface Props {
   winners: Winner[];
-  onClose: () => void; // Used for fallback or background click
+  onClose: () => void; 
   onViewDetails: (winner: Winner) => void;
   onConfirmRound: () => void;
   onRejectWinner: (winner: Winner) => void;
 }
 
 const WinnerModal: React.FC<Props> = ({ winners, onClose, onViewDetails, onConfirmRound, onRejectWinner }) => {
+  const { showConfirm } = useAlert();
   
-  const handleReject = (w: Winner) => {
+  const handleReject = async (w: Winner) => {
     const isSoleWinner = winners.length === 1;
     const message = isSoleWinner
       ? `¿INVALIDAR a ${w.participantName}?\n\nAl ser el único ganador:\n1. Se eliminará de la lista.\n2. Se resetearán las bolillas.\n3. El premio volverá a estar disponible.`
       : `¿INVALIDAR a ${w.participantName}?\n\nHay ${winners.length} ganadores. Esta acción solo eliminará a este participante. El premio seguirá asignado a los restantes.`;
 
-    if (window.confirm(message)) {
+    const confirmed = await showConfirm({
+        title: 'Invalidar Ganador',
+        message: message,
+        type: 'danger',
+        confirmText: 'Sí, invalidar'
+    });
+
+    if (confirmed) {
       onRejectWinner(w);
     }
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-      {/* Glow Effect Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-500/20 rounded-full blur-[100px] animate-pulse"></div>
       </div>
 
       <div className="relative w-full max-w-lg transform transition-all animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
-        {/* Card Border Gradient */}
         <div className="absolute -inset-1 bg-gradient-to-b from-amber-300 via-amber-500 to-orange-600 rounded-2xl blur opacity-75"></div>
         
         <div className="relative bg-slate-950 border border-amber-500/50 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
           
-          {/* Header */}
           <div className="bg-gradient-to-b from-amber-900/50 to-slate-950 p-6 text-center relative flex-shrink-0">
              <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20">
                 <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)]"></div>
@@ -60,7 +65,6 @@ const WinnerModal: React.FC<Props> = ({ winners, onClose, onViewDetails, onConfi
              </div>
           </div>
 
-          {/* List Content */}
           <div className="p-6 pt-2 overflow-y-auto custom-scrollbar flex-1">
             <div className="space-y-3">
               {winners.map((w, idx) => (
@@ -103,7 +107,6 @@ const WinnerModal: React.FC<Props> = ({ winners, onClose, onViewDetails, onConfi
             </div>
           </div>
 
-          {/* Footer */}
           <div className="p-6 pt-4 bg-slate-950/50 border-t border-slate-800 flex-shrink-0">
             <button
               onClick={onConfirmRound}
