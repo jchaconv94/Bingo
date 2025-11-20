@@ -14,7 +14,12 @@ interface Props {
 const WinnerModal: React.FC<Props> = ({ winners, onClose, onViewDetails, onConfirmRound, onRejectWinner }) => {
   
   const handleReject = (w: Winner) => {
-    if (window.confirm(`¿INVALIDAR a ${w.participantName}?\n\nEsta acción:\n1. Eliminará a este ganador.\n2. Reseteará las bolillas.\n3. Dejará el premio ABIERTO para jugar de nuevo.`)) {
+    const isSoleWinner = winners.length === 1;
+    const message = isSoleWinner
+      ? `¿INVALIDAR a ${w.participantName}?\n\nAl ser el único ganador:\n1. Se eliminará de la lista.\n2. Se resetearán las bolillas.\n3. El premio volverá a estar disponible.`
+      : `¿INVALIDAR a ${w.participantName}?\n\nHay ${winners.length} ganadores. Esta acción solo eliminará a este participante. El premio seguirá asignado a los restantes.`;
+
+    if (window.confirm(message)) {
       onRejectWinner(w);
     }
   };
@@ -80,7 +85,7 @@ const WinnerModal: React.FC<Props> = ({ winners, onClose, onViewDetails, onConfi
                     <button
                       onClick={() => handleReject(w)}
                       className="p-2 bg-slate-800 hover:bg-rose-950/50 text-slate-400 hover:text-rose-400 rounded-lg border border-slate-700 hover:border-rose-500/50 transition-all"
-                      title="INVALIDAR GANADOR (Borra ganador y resetea sorteo)"
+                      title="INVALIDAR GANADOR (Borra ganador)"
                     >
                       <UserX size={20} />
                     </button>

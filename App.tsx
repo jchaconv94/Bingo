@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Participant, GameState, Winner, TOTAL_BALLS, NUMBERS_PER_CARD, BingoCard, PatternKey, Prize } from './types.ts';
@@ -373,35 +372,45 @@ const App: React.FC = () => {
   };
 
   const handleRejectWinner = (invalidWinner: Winner) => {
-    // El usuario rechazó a un ganador.
-    // Acciones: Eliminar ganador, Resetear bolillas, Limpiar Patrón, DESMARCAR premio (reabrir).
-    
-    // 1. Eliminar ganador de la lista histórica
+    // Determinar si hay otros ganadores en el lote actual (concurrentes)
+    const remainingInBatch = currentBatchWinners.filter(w => 
+       !(w.cardId === invalidWinner.cardId && w.timestamp === invalidWinner.timestamp)
+    );
+
+    // 1. Siempre eliminar al ganador inválido del historial global
     setWinners(prev => prev.filter(w => 
        !(w.cardId === invalidWinner.cardId && w.timestamp === invalidWinner.timestamp)
     ));
 
-    // 2. Reabrir el premio (si tenía uno asignado)
-    if (invalidWinner.prizeId) {
-       setPrizes(prev => prev.map(p => 
-          p.id === invalidWinner.prizeId ? { ...p, isAwarded: false } : p
-       ));
-       addLog(`↩️ Premio "${invalidWinner.prizeName}" reabierto.`);
+    if (remainingInBatch.length > 0) {
+       // ESCENARIO: Hay otros ganadores válidos en esta ronda.
+       // Acción: Solo eliminar a este ganador, mantener el estado del juego bloqueado/premiado para los demás.
+       setCurrentBatchWinners(remainingInBatch);
+       addLog(`⚠️ Ganador invalidado: ${invalidWinner.participantName}. Quedan ${remainingInBatch.length} ganadores.`);
+    } else {
+       // ESCENARIO: Era el único ganador (o el último que quedaba).
+       // Acción: Invalidar la ronda completamente.
+       
+       // 2. Reabrir el premio si fue asignado provisionalmente
+       if (invalidWinner.prizeId) {
+          setPrizes(prev => prev.map(p => 
+             p.id === invalidWinner.prizeId ? { ...p, isAwarded: false } : p
+          ));
+          addLog(`↩️ Premio "${invalidWinner.prizeName}" reabierto.`);
+       }
+
+       // 3. Resetear estado del juego (Void Round)
+       setGameState(prev => ({
+          ...prev,
+          drawnBalls: [],
+          history: [...prev.history, `🚫 Ganador invalidado: ${invalidWinner.participantName}. Ronda reiniciada.`],
+          selectedPattern: 'NONE',
+          roundLocked: false
+       }));
+
+       setCurrentBatchWinners([]);
+       addLog("⚠️ Ronda invalidada y reiniciada por falta de ganadores válidos.");
     }
-
-    // 3. Resetear estado del juego (Void Round)
-    setGameState(prev => ({
-       ...prev,
-       drawnBalls: [],
-       history: [...prev.history, `🚫 Ganador invalidado: ${invalidWinner.participantName}. Ronda reiniciada.`],
-       selectedPattern: 'NONE',
-       roundLocked: false
-       // NO incrementamos gameRound porque vamos a re-jugar la misma
-    }));
-
-    // 4. Cerrar modal (o actualizarlo si hubieran mas ganadores, pero la instrucción dice resetear todo)
-    setCurrentBatchWinners([]);
-    addLog("⚠️ Ronda invalidada y reiniciada.");
   };
 
   const handleCloseWinnerModal = () => {
