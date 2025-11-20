@@ -125,52 +125,84 @@ export const parseExcel = async (file: File): Promise<Participant[]> => {
 
 const createTempCardElement = (participant: Participant, card: BingoCard, title: string, subtitle: string = ""): HTMLElement => {
   const container = document.createElement('div');
+  
+  // Configuración de estilos generales para alta resolución
   Object.assign(container.style, {
-    width: '600px',
+    width: '800px', // Increased resolution width
     padding: '40px',
-    backgroundColor: '#ffffff', // Pure white for PDF
-    color: '#0f172a', 
-    fontFamily: "'Inter', sans-serif",
+    backgroundColor: '#ffffff',
+    color: '#1e293b', 
+    fontFamily: "'Inter', system-ui, sans-serif",
     position: 'absolute',
     top: '-9999px',
     left: '-9999px',
     boxSizing: 'border-box',
+    backgroundImage: 'radial-gradient(circle at top right, #f8fafc 0%, #ffffff 100%)'
   });
 
-  // Header Section matching the "BINGO VIRTUAL" clean design
+  // Header Section
   const header = `
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
-      <div style="max-width: 75%;">
-        <h1 style="font-size: 32px; font-weight: 900; margin: 0; color: #1e293b; letter-spacing: -1px; line-height: 1.1; text-transform: uppercase;">${title}</h1>
-        ${subtitle ? `<div style="font-size: 14px; color: #64748b; font-weight: 600; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">${subtitle}</div>` : ''}
-        <div style="margin-top: 15px;">
-           <div style="font-size: 22px; font-weight: 700; color: #334155; line-height: 1.2;">${participant.name} ${participant.surname}</div>
-           <div style="font-size: 16px; color: #64748b;">DNI: ${participant.dni}</div>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 3px solid #0f172a; padding-bottom: 20px;">
+      <div style="flex: 1;">
+        <h1 style="font-size: 36px; font-weight: 900; margin: 0; color: #0f172a; letter-spacing: -0.02em; line-height: 1.1; text-transform: uppercase;">${title}</h1>
+        ${subtitle ? `<div style="font-size: 18px; color: #64748b; font-weight: 500; margin-top: 8px;">${subtitle}</div>` : ''}
+        
+        <div style="margin-top: 24px; display: flex; gap: 20px; align-items: center;">
+           <div>
+              <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #94a3b8;">Participante</div>
+              <div style="font-size: 24px; font-weight: 700; color: #334155; line-height: 1.2;">${participant.name} ${participant.surname}</div>
+           </div>
+           <div style="border-left: 2px solid #e2e8f0; padding-left: 20px;">
+              <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #94a3b8;">DNI</div>
+              <div style="font-size: 20px; font-weight: 600; color: #475569;">${participant.dni}</div>
+           </div>
         </div>
       </div>
+      
       <div style="text-align: right;">
-        <div style="font-size: 36px; font-weight: 800; color: #0f172a;">#${card.id}</div>
-        <div style="font-size: 14px; color: #94a3b8; margin-top: 4px;">${new Date().toLocaleDateString()}</div>
+        <div style="background: #0f172a; color: white; padding: 8px 20px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="font-size: 12px; font-weight: 600; opacity: 0.8; text-transform: uppercase; letter-spacing: 2px;">Cartón</div>
+            <div style="font-size: 42px; font-weight: 800; line-height: 1;">#${card.id.replace(/^C/, '')}</div>
+        </div>
+        <div style="font-size: 14px; color: #94a3b8; margin-top: 12px; font-weight: 500;">${new Date().toLocaleDateString()}</div>
       </div>
     </div>
-    
-    <div style="border-bottom: 2px solid #e2e8f0; margin-bottom: 20px;"></div>
   `;
 
-  // Grid Section with dark rounded cells
+  // Colors for B-I-N-G-O headers
+  const bingoColors = [
+    { bg: '#3b82f6', text: 'white', l: 'B' }, // Blue
+    { bg: '#ef4444', text: 'white', l: 'I' }, // Red
+    { bg: '#e2e8f0', text: '#475569', l: 'N' }, // Slate (Center)
+    { bg: '#10b981', text: 'white', l: 'G' }, // Emerald
+    { bg: '#f59e0b', text: 'white', l: 'O' }  // Amber
+  ];
+
+  // Grid Section
   let gridHtml = `
-    <table style="width: 100%; border-collapse: separate; border-spacing: 10px;">
+    <table style="width: 100%; border-collapse: separate; border-spacing: 15px;">
        <thead>
         <tr>
-          ${['B','I','N','G','O'].map(l => 
-            `<th style="
-                text-align: center; 
-                font-size: 42px; 
-                font-weight: 900; 
-                color: #475569; 
-                padding-bottom: 10px;
-                line-height: 1;
-            ">${l}</th>`
+          ${bingoColors.map(c => 
+            `<th style="text-align: center; padding-bottom: 10px;">
+                <div style="
+                  width: 90px; 
+                  height: 90px; 
+                  background-color: ${c.bg}; 
+                  color: ${c.text};
+                  border-radius: 50%; 
+                  display: flex; 
+                  align-items: center; 
+                  justify-content: center; 
+                  font-size: 48px; 
+                  font-weight: 900; 
+                  margin: 0 auto;
+                  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                  text-shadow: ${c.text === 'white' ? '0 2px 4px rgba(0,0,0,0.2)' : 'none'};
+                ">
+                  ${c.l}
+                </div>
+            </th>`
           ).join('')}
         </tr>
       </thead>
@@ -184,20 +216,22 @@ const createTempCardElement = (participant: Participant, card: BingoCard, title:
       const value = card.numbers[index];
       const isCenter = index === 12;
 
+      // Modern Cell Style: White card-like cells instead of black blocks
       const cellStyle = `
         width: 20%;
-        height: 80px;
-        background-color: #1e293b; /* Dark Slate */
-        color: white;
-        border-radius: 12px;
+        height: 90px;
+        background-color: ${isCenter ? '#f1f5f9' : '#ffffff'}; 
+        border: ${isCenter ? '3px solid #cbd5e1' : '2px solid #e2e8f0'};
+        border-radius: 16px;
         text-align: center;
         vertical-align: middle;
-        font-size: 34px;
-        font-weight: 700;
+        font-size: 42px;
+        font-weight: 800;
+        color: ${isCenter ? '#cbd5e1' : '#1e293b'};
         padding: 0;
         margin: 0;
         line-height: 1;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        box-shadow: ${isCenter ? 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)' : '0 4px 6px -1px rgba(0, 0, 0, 0.05)'};
       `;
 
       const contentWrapper = `display:flex; justify-content:center; align-items:center; height:100%; width: 100%;`;
@@ -205,10 +239,11 @@ const createTempCardElement = (participant: Participant, card: BingoCard, title:
       if (isCenter) {
         gridHtml += `
           <td style="${cellStyle}">
-             <div style="${contentWrapper}">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="#cbd5e1" stroke="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.5;">
-                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+             <div style="${contentWrapper}; flex-direction: column; gap: 4px;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="#94a3b8" stroke="none" xmlns="http://www.w3.org/2000/svg">
+                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                 </svg>
+                <span style="font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8;">Libre</span>
              </div>
           </td>`;
       } else {
@@ -221,9 +256,14 @@ const createTempCardElement = (participant: Participant, card: BingoCard, title:
   gridHtml += `</tbody></table>`;
 
   const footer = `
-    <div style="margin-top: 25px; border-top: 1px dashed #cbd5e1; padding-top: 15px; text-align: center; font-size: 12px; color: #94a3b8; font-weight: 500;">
-      <div>¡Buena suerte! • Sistema de Bingo Virtual</div>
-      <div style="font-size: 10px; margin-top: 4px; opacity: 0.8; color: #cbd5e1;">By Owoweb</div>
+    <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="font-size: 14px; color: #64748b; font-weight: 600;">
+        ¡Mucha Suerte! 🍀
+      </div>
+      <div style="text-align: right;">
+         <div style="font-size: 14px; font-weight: 700; color: #0f172a;">Sistema de Bingo Virtual</div>
+         <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Generado automáticamente</div>
+      </div>
     </div>
   `;
 
