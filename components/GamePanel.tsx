@@ -74,8 +74,8 @@ const GamePanel: React.FC<Props> = ({
     setIsAnimating(true);
 
     // Simple animation effect
-    let duration = 1000;
-    let intervalTime = 50;
+    let duration = 3000; // Increased to 3 seconds for more suspense
+    let intervalTime = 60; // Slightly faster updates
     let elapsed = 0;
 
     const interval = setInterval(() => {
@@ -132,9 +132,9 @@ const GamePanel: React.FC<Props> = ({
   // Configuración de las filas del tablero
   const boardRows = [
     { letter: 'B', min: 1, max: 15, color: 'text-cyan-400' },
-    { letter: 'I', min: 16, max: 30, color: 'text-red-400' },
+    { letter: 'I', min: 16, max: 30, color: 'text-rose-400' },
     { letter: 'N', min: 31, max: 45, color: 'text-white' },
-    { letter: 'G', min: 46, max: 60, color: 'text-green-400' },
+    { letter: 'G', min: 46, max: 60, color: 'text-emerald-400' },
     { letter: 'O', min: 61, max: 75, color: 'text-amber-400' },
   ];
 
@@ -259,7 +259,7 @@ const GamePanel: React.FC<Props> = ({
         </div>
 
         {/* Main Display Area */}
-        <div className="relative min-h-[220px] flex items-center justify-center py-2">
+        <div className="relative min-h-[240px] flex items-center justify-center py-2 perspective-1000">
           
           {/* Left Column: Prizes List (Visual Integration) */}
           {prizes.length > 0 && (
@@ -274,17 +274,12 @@ const GamePanel: React.FC<Props> = ({
                   let dynamicFontSize = 'text-lg'; // Default base for inactive
                   
                   if (isNext) {
-                    // Ajuste fino para el ancho de w-64 (aprox 256px total - padding - icono)
-                    // Espacio real aprox para texto: 160px
-                    
-                    // Ajustado para evitar desborde a la derecha en montos comunes como S/.200.00 (9 chars)
                     if (textLen <= 6) dynamicFontSize = 'text-4xl';       
                     else if (textLen <= 8) dynamicFontSize = 'text-3xl';  
-                    else if (textLen <= 10) dynamicFontSize = 'text-2xl'; // Covers S/.200.00 (9) and S/.1000.00 (10)
-                    else if (textLen <= 13) dynamicFontSize = 'text-xl';  // Covers S/.10000.00 (11)
+                    else if (textLen <= 10) dynamicFontSize = 'text-2xl'; 
+                    else if (textLen <= 13) dynamicFontSize = 'text-xl';  
                     else dynamicFontSize = 'text-sm';                     
                   } else {
-                    // For inactive prizes
                     dynamicFontSize = textLen > 15 ? 'text-xs' : 'text-sm';
                   }
 
@@ -302,12 +297,10 @@ const GamePanel: React.FC<Props> = ({
                         }
                       `}
                     >
-                       {/* Card Decoration for Active */}
                        {isNext && <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>}
 
                        <div className="p-3 flex items-center gap-3 relative overflow-hidden">
                           
-                          {/* Icon Box */}
                           <div className={`
                              flex-shrink-0 flex items-center justify-center rounded-lg backdrop-blur-md shadow-inner
                              ${isNext 
@@ -320,7 +313,6 @@ const GamePanel: React.FC<Props> = ({
                           </div>
 
                           <div className="flex-1 min-w-0 z-10">
-                             {/* Top Label */}
                              {isNext && (
                                 <div className="text-[9px] font-black text-amber-100 uppercase tracking-widest mb-0.5 animate-pulse">
                                    JUGANDO
@@ -332,18 +324,15 @@ const GamePanel: React.FC<Props> = ({
                                 </div>
                              )}
 
-                             {/* Prize Name */}
                              <div className={`text-[10px] uppercase font-bold tracking-wide leading-none mb-1 ${isNext ? 'text-white/90' : 'text-slate-400'}`}>
                                 {prize.name}
                              </div>
                              
-                             {/* Prize Amount/Description */}
                              <div className={`font-black leading-none whitespace-nowrap ${dynamicFontSize} tracking-tight ${isNext ? 'text-white drop-shadow-sm' : prize.isAwarded ? 'text-slate-500 line-through' : 'text-slate-500'}`}>
                                {prize.description}
                              </div>
                           </div>
 
-                          {/* Background Watermark for Active */}
                           {isNext && (
                              <Gift className="absolute -right-2 -bottom-3 text-white/10 rotate-[-15deg]" size={64} />
                           )}
@@ -354,44 +343,77 @@ const GamePanel: React.FC<Props> = ({
              </div>
           )}
 
-          {/* Center: The Ball & Letter */}
+          {/* Center: The 3D Ball & Letter */}
           <div className="relative flex items-center justify-center lg:ml-10">
-            {/* Letra de Bingo (Izquierda) - Absolute relative to Ball */}
-            <div className="absolute right-full top-1/2 -translate-y-1/2 pr-3 flex justify-end min-w-[50px]">
+            
+            {/* Letra de Bingo (Izquierda) */}
+            <div className="absolute right-full top-1/2 -translate-y-1/2 pr-6 flex justify-end min-w-[60px]">
               {typeof currentBall === 'number' && (
-                <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
-                   <span className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-0 whitespace-nowrap">Columna</span>
-                   <span className={`text-4xl sm:text-5xl font-black leading-none ${isAnimating ? 'text-slate-600' : 'text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]'}`}>
+                <div className={`flex flex-col items-center duration-500 ${isAnimating ? 'opacity-50 scale-90 blur-[1px]' : 'opacity-100 scale-100 animate-in slide-in-from-right-4'}`}>
+                   <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1 whitespace-nowrap">Columna</span>
+                   <span className="text-6xl sm:text-7xl font-black leading-none text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" style={{ textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
                      {getBingoLetter(currentBall)}
                    </span>
                 </div>
               )}
             </div>
 
-            {/* La Bolilla (Centro) - REDUCED SIZE */}
-            <div 
-              className={`
-                w-36 h-36 sm:w-44 sm:h-44 rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(0,0,0,0.6)] border-[6px] border-slate-800 relative overflow-hidden flex-shrink-0 z-10
-                ${isAnimating 
-                  ? 'bg-slate-900' 
-                  : 'bg-gradient-to-br from-amber-400 via-orange-500 to-orange-700 shadow-orange-900/30'
-                }
-                transition-all duration-200
-              `}
-            >
-              {/* Efectos de brillo para dar volumen (Glossy) */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[90%] h-[45%] bg-gradient-to-b from-white/30 to-transparent rounded-full pointer-events-none blur-[1px]" />
-              
-              {typeof currentBall === 'number' ? (
-                <div className="relative z-10 flex items-center justify-center w-full h-full">
-                   {/* REMOVED BOTTOM PADDING FOR CENTERING */}
-                   <span className={`text-5xl sm:text-7xl font-black tracking-tighter leading-none select-none ${isAnimating ? 'text-slate-700' : 'text-white drop-shadow-md'}`}>
-                      {currentBall}
-                   </span>
-                </div>
-              ) : (
-                 <span className="text-5xl sm:text-7xl font-black select-none text-slate-700 opacity-30">{currentBall}</span>
-              )}
+            {/* La Bolilla 3D (Centro) */}
+            <div className="relative">
+               {/* Sombra de suelo */}
+               <div className={`absolute -bottom-4 left-1/2 -translate-x-1/2 w-32 h-8 bg-black/60 rounded-[100%] blur-md transition-all duration-200 ${isAnimating ? 'scale-75 opacity-40' : 'scale-100 opacity-60'}`}></div>
+
+               {/* Cuerpo de la Esfera */}
+               <div 
+                 className={`
+                   w-48 h-48 sm:w-56 sm:h-56 rounded-full flex items-center justify-center relative z-10
+                   transition-all duration-150
+                   ${isAnimating ? 'animate-bounce' : 'animate-in zoom-in-90 duration-500'}
+                 `}
+                 style={{
+                    // Generic Realistic 3D Sphere Gradient for Amber/Orange Ball
+                    background: isAnimating 
+                       ? 'radial-gradient(circle at 35% 35%, #fde68a 0%, #d97706 40%, #92400e 80%, #451a03 100%)' 
+                       : 'radial-gradient(circle at 30% 30%, #fff7ed 0%, #fbbf24 15%, #d97706 50%, #92400e 85%, #451a03 100%)',
+                    boxShadow: 'inset -10px -10px 30px rgba(0,0,0,0.5), 0 0 0 2px rgba(251, 191, 36, 0.1), 0 20px 40px rgba(0,0,0,0.6)'
+                 }}
+               >
+                  {/* Brillo Especular (Glossy Shine) - Top Left */}
+                  <div className="absolute top-[10%] left-[15%] w-[35%] h-[20%] bg-gradient-to-b from-white/90 to-transparent rounded-[100%] rotate-[-45deg] blur-[2px] opacity-80 pointer-events-none"></div>
+                  
+                  {/* Reflejo secundario inferior */}
+                  <div className="absolute bottom-[5%] right-[15%] w-[30%] h-[10%] bg-orange-400/30 rounded-[100%] blur-md rotate-[-45deg] pointer-events-none"></div>
+
+                  {/* Círculo Central Blanco (Contenedor del número) */}
+                  <div 
+                     className={`
+                        bg-white w-[65%] h-[65%] rounded-full flex items-center justify-center shadow-[inset_0_2px_10px_rgba(0,0,0,0.3)] relative overflow-hidden
+                        ${isAnimating ? 'animate-spin' : ''} 
+                     `}
+                     style={{ animationDuration: '0.3s' }} // Fast spin blur during animation
+                  >
+                     {/* Textura sutil papel */}
+                     <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/felt.png')]"></div>
+
+                     {typeof currentBall === 'number' ? (
+                       <span 
+                          className={`
+                             text-7xl sm:text-8xl font-black tracking-tighter leading-none select-none text-slate-900
+                             ${isAnimating ? 'blur-[4px] scale-75 opacity-50' : 'blur-0 scale-100 opacity-100'}
+                             transition-all duration-200
+                          `}
+                          style={{ textShadow: '1px 2px 4px rgba(0,0,0,0.2)' }}
+                       >
+                          {currentBall}
+                       </span>
+                     ) : (
+                        <span className="text-7xl sm:text-8xl font-black select-none text-slate-300 opacity-30">{currentBall}</span>
+                     )}
+                  </div>
+                  
+                  {/* Anillo metálico decorativo (opcional, si se desea ver como una jaula, pero aquí es estilo esfera de pool) */}
+                  <div className="absolute inset-0 rounded-full border-[1px] border-white/20 pointer-events-none"></div>
+               </div>
             </div>
           </div>
           
@@ -407,7 +429,7 @@ const GamePanel: React.FC<Props> = ({
             disabled={isDrawDisabled}
             title={buttonTooltip}
             className={`
-              col-span-3 flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-xl sm:text-2xl shadow-lg transition-all relative overflow-hidden
+              col-span-3 flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-xl sm:text-2xl shadow-lg transition-all relative overflow-hidden group
               ${isDrawDisabled
                 ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
                 : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white shadow-indigo-900/30 active:scale-95'
@@ -419,8 +441,14 @@ const GamePanel: React.FC<Props> = ({
                  <span className="text-sm font-bold text-amber-400 px-4 py-2 text-center animate-pulse">{buttonTooltip}</span>
               </div>
             )}
-            <Play fill="currentColor" size={26} />
-            {isAnimating ? 'Girando...' : buttonLabel}
+            <div className={`relative ${isAnimating ? 'animate-spin' : ''}`}>
+               <Play fill="currentColor" size={26} />
+            </div>
+            {isAnimating ? 'Mezclando...' : buttonLabel}
+            
+            {!isDrawDisabled && !isAnimating && (
+               <div className="absolute right-0 top-0 h-full w-20 bg-gradient-to-l from-white/10 to-transparent transform skew-x-12 group-hover:translate-x-full transition-transform duration-700"></div>
+            )}
           </button>
 
           <div className="col-span-1 flex flex-col gap-2">
