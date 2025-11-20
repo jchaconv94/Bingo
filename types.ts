@@ -1,4 +1,5 @@
 
+
 export interface BingoCard {
   id: string;
   numbers: number[]; // Array of 25 items (index 12 is 0/placeholder)
@@ -19,6 +20,13 @@ export interface Winner {
   cardId: string;
   timestamp: number;
   winningNumber: number;
+  winningPattern?: PatternKey; // The pattern used when this win occurred
+  drawnBalls?: number[]; // Snapshot of balls drawn at the moment of win
+  // Snapshot of the prize won at that moment
+  prizeId?: string;
+  prizeName?: string;
+  prizeDescription?: string;
+  round?: number; // The game round index (1, 2, 3...) this win belongs to
 }
 
 export interface Prize {
@@ -29,6 +37,7 @@ export interface Prize {
 }
 
 export type PatternKey = 
+  | 'NONE'
   | 'FULL' 
   | 'X' 
   | 'L' 
@@ -57,6 +66,8 @@ export interface GameState {
   history: string[];
   lastCardSequence: number;
   selectedPattern: PatternKey;
+  roundLocked?: boolean;
+  gameRound: number; // Tracks the current round sequence (increments on partial reset)
 }
 
 export const TOTAL_BALLS = 75;

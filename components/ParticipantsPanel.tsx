@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Search, Users, Medal, Ticket, Edit2, Trash2, Save, X, Eye, EyeOff, CreditCard, ChevronDown, ChevronUp, ScanEye, Phone, Fingerprint, MessageCircle, FileText } from 'lucide-react';
-import { Participant, Winner, BingoCard as BingoCardType, PatternKey } from '../types.ts';
+import { Participant, Winner, BingoCard as BingoCardType, PatternKey, Prize } from '../types.ts';
 import BingoCard from './BingoCard.tsx';
 import WinnerDetailsModal from './WinnerDetailsModal.tsx';
 import ParticipantDetailsModal from './ParticipantDetailsModal.tsx';
@@ -19,6 +18,7 @@ interface Props {
   currentPattern: PatternKey;
   onShareCard?: (participant: Participant, cardId: string) => void;
   onShareAllCards?: (participant: Participant) => void;
+  prizes?: Prize[];
 }
 
 const ParticipantsPanel: React.FC<Props> = ({ 
@@ -33,7 +33,8 @@ const ParticipantsPanel: React.FC<Props> = ({
   onDeleteAllParticipants,
   currentPattern,
   onShareCard,
-  onShareAllCards
+  onShareAllCards,
+  prizes = []
 }) => {
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -129,6 +130,8 @@ const ParticipantsPanel: React.FC<Props> = ({
           onDeleteCard={onDeleteCard}
           onDownloadCard={onDownloadCard}
           onShareCard={onShareCard ? (cardId) => onShareCard(viewingWinnerData.participant, cardId) : undefined}
+          prizes={prizes}
+          allWinners={winners}
         />
       )}
 

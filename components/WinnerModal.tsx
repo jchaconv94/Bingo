@@ -1,14 +1,24 @@
+
 import React from 'react';
-import { Trophy, Sparkles, Check, Eye, Hash } from 'lucide-react';
+import { Trophy, Sparkles, Check, Eye, Hash, UserX } from 'lucide-react';
 import { Winner } from '../types.ts';
 
 interface Props {
   winners: Winner[];
-  onClose: () => void;
+  onClose: () => void; // Used for fallback or background click
   onViewDetails: (winner: Winner) => void;
+  onConfirmRound: () => void;
+  onRejectWinner: (winner: Winner) => void;
 }
 
-const WinnerModal: React.FC<Props> = ({ winners, onClose, onViewDetails }) => {
+const WinnerModal: React.FC<Props> = ({ winners, onClose, onViewDetails, onConfirmRound, onRejectWinner }) => {
+  
+  const handleReject = (w: Winner) => {
+    if (window.confirm(`¿INVALIDAR a ${w.participantName}?\n\nEsta acción:\n1. Eliminará a este ganador.\n2. Reseteará las bolillas.\n3. Dejará el premio ABIERTO para jugar de nuevo.`)) {
+      onRejectWinner(w);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
       {/* Glow Effect Background */}
@@ -39,6 +49,9 @@ const WinnerModal: React.FC<Props> = ({ winners, onClose, onViewDetails }) => {
                <p className="text-amber-300 font-medium text-sm tracking-widest uppercase mt-1 flex items-center justify-center gap-2">
                  <Sparkles size={14} /> {winners.length} Ganador{winners.length > 1 ? 'es' : ''} <Sparkles size={14} />
                </p>
+               <p className="text-slate-400 text-xs mt-2 max-w-xs mx-auto leading-tight">
+                 Verifique la validez de los ganadores antes de confirmar el sorteo.
+               </p>
              </div>
           </div>
 
@@ -63,13 +76,23 @@ const WinnerModal: React.FC<Props> = ({ winners, onClose, onViewDetails }) => {
                     </div>
                   </div>
                   
-                  <button
-                    onClick={() => onViewDetails(w)}
-                    className="p-2 bg-slate-800 hover:bg-cyan-900/50 text-slate-400 hover:text-cyan-400 rounded-lg border border-slate-700 hover:border-cyan-500/50 transition-all"
-                    title="Ver cartón completo"
-                  >
-                    <Eye size={20} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleReject(w)}
+                      className="p-2 bg-slate-800 hover:bg-rose-950/50 text-slate-400 hover:text-rose-400 rounded-lg border border-slate-700 hover:border-rose-500/50 transition-all"
+                      title="INVALIDAR GANADOR (Borra ganador y resetea sorteo)"
+                    >
+                      <UserX size={20} />
+                    </button>
+
+                    <button
+                      onClick={() => onViewDetails(w)}
+                      className="p-2 bg-slate-800 hover:bg-cyan-900/50 text-slate-400 hover:text-cyan-400 rounded-lg border border-slate-700 hover:border-cyan-500/50 transition-all"
+                      title="Ver cartón completo"
+                    >
+                      <Eye size={20} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -78,12 +101,17 @@ const WinnerModal: React.FC<Props> = ({ winners, onClose, onViewDetails }) => {
           {/* Footer */}
           <div className="p-6 pt-4 bg-slate-950/50 border-t border-slate-800 flex-shrink-0">
             <button
-              onClick={onClose}
+              onClick={onConfirmRound}
               className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-lg rounded-xl shadow-lg shadow-emerald-900/40 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <Check size={24} strokeWidth={3} />
               Continuar Sorteo
             </button>
+            <div className="text-center mt-2">
+               <span className="text-[10px] text-slate-500">
+                 Al continuar: Se marcan premios como entregados, se borran bolillas y se limpia el patrón.
+               </span>
+            </div>
           </div>
 
         </div>

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, RotateCcw, Trophy, Hash, History, LayoutGrid, Eye, X, Star, Gift, CheckCircle, Circle } from 'lucide-react';
 import { PatternKey, WinPattern, Prize } from '../types.ts';
@@ -14,6 +15,7 @@ interface Props {
   onPatternChange: (pattern: PatternKey) => void;
   prizes?: Prize[];
   onTogglePrize?: (id: string) => void;
+  roundLocked: boolean;
 }
 
 const getBingoLetter = (num: number): string => {
@@ -34,7 +36,8 @@ const GamePanel: React.FC<Props> = ({
   currentPattern,
   onPatternChange,
   prizes = [],
-  onTogglePrize
+  onTogglePrize,
+  roundLocked
 }) => {
   const [currentBall, setCurrentBall] = useState<number | string>('—');
   const [isAnimating, setIsAnimating] = useState(false);
@@ -53,13 +56,15 @@ const GamePanel: React.FC<Props> = ({
     }
   }, [lastBall]);
 
-  // Efecto para abrir el modal automáticamente al cambiar de patrón
+  // Efecto para abrir el modal automáticamente al cambiar de patrón (excepto en NONE o inicial)
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
-    setShowPatternPreview(true);
+    if (currentPattern !== 'NONE') {
+      setShowPatternPreview(true);
+    }
   }, [currentPattern]);
 
   const handleDraw = () => {
@@ -84,7 +89,37 @@ const GamePanel: React.FC<Props> = ({
     }, intervalTime);
   };
 
-  const isDrawDisabled = isAnimating || drawnBalls.length >= 75 || !hasParticipants;
+  // --- Validations for button disable ---
+  const allPrizesAwarded = prizes.length > 0 && prizes.every(p => p.isAwarded);
+  const noPrizes = prizes.length === 0;
+  
+  // ESTADO CRITICO: Premio entregado (roundLocked = true).
+  // El patrón sigue visible, pero el juego está bloqueado hasta resetear.
+  const roundFinishedNeedsReset = roundLocked;
+  
+  const noPattern = currentPattern === 'NONE';
+  
+  const isDrawDisabled = isAnimating || drawnBalls.length >= 75 || !hasParticipants || noPrizes || noPattern || allPrizesAwarded || roundLocked;
+
+  let buttonTooltip = "";
+  let buttonLabel = "SACAR BOLILLA";
+
+  // Orden de prioridad de mensajes
+  if (noPrizes) {
+    buttonTooltip = "Registra al menos un premio para comenzar.";
+  } else if (allPrizesAwarded) {
+    buttonTooltip = "¡Juego Terminado! Todos los premios entregados.";
+    buttonLabel = "EVENTO FINALIZADO";
+  } else if (roundFinishedNeedsReset) {
+    // MENSAJE ESPECÍFICO SOLICITADO
+    buttonTooltip = "Resetea las bolillas para jugar el siguiente premio.";
+    buttonLabel = "RONDA FINALIZADA";
+  } else if (noPattern) {
+    buttonTooltip = "Selecciona una forma de ganar (patrón) para continuar.";
+    buttonLabel = "SELECCIONA PATRÓN";
+  } else if (!hasParticipants) {
+    buttonTooltip = "Registra participantes para comenzar.";
+  }
 
   // Configuración de las filas del tablero
   const boardRows = [
@@ -99,7 +134,7 @@ const GamePanel: React.FC<Props> = ({
     <div className="flex flex-col w-full gap-4 relative h-full">
       
       {/* Modal de Previsualización del Patrón */}
-      {showPatternPreview && (
+      {showPatternPreview && currentPattern !== 'NONE' && (
         <div className="fixed inset-0 z-[50] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-xs p-5 relative animate-in zoom-in-95 duration-300">
             <button 
@@ -189,14 +224,15 @@ const GamePanel: React.FC<Props> = ({
               <select 
                 value={currentPattern}
                 onChange={(e) => onPatternChange(e.target.value as PatternKey)}
-                title={drawnBalls.length > 0 ? "Cambiar patrón (requiere confirmación)" : "Selecciona la forma ganadora"}
+                disabled={roundLocked} // Bloquear si el premio ya fue entregado para forzar reset
+                title={roundLocked ? "Resetea las bolillas para cambiar el patrón" : "Selecciona la forma ganadora"}
                 className={`
-                  bg-slate-950 border border-slate-700 text-white text-xs sm:text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full px-2.5 py-1.5
-                  hover:border-cyan-500/50 cursor-pointer
+                  bg-slate-950 border text-white text-xs sm:text-sm rounded-lg block w-full px-2.5 py-1.5 cursor-pointer transition-all
+                  ${currentPattern === 'NONE' ? 'border-amber-500 ring-1 ring-amber-500/50 text-amber-300 animate-pulse' : 'border-slate-700 focus:ring-cyan-500 focus:border-cyan-500 hover:border-cyan-500/50'}
                 `}
               >
                 {Object.values(WIN_PATTERNS).map((pattern: WinPattern) => (
-                  <option key={pattern.key} value={pattern.key}>
+                  <option key={pattern.key} value={pattern.key} disabled={pattern.key === 'NONE'}>
                     {pattern.label}
                   </option>
                 ))}
@@ -204,8 +240,9 @@ const GamePanel: React.FC<Props> = ({
               
               <button
                 onClick={() => setShowPatternPreview(true)}
-                className="p-2 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 rounded-lg transition-colors"
-                title="Ver forma de ganada"
+                disabled={currentPattern === 'NONE'}
+                className={`p-2 border rounded-lg transition-colors ${currentPattern === 'NONE' ? 'bg-slate-900 border-slate-800 text-slate-600' : 'bg-slate-800 hover:bg-slate-700 text-cyan-400 border-slate-700'}`}
+                title="Ver forma de ganar"
               >
                 <Eye size={16} />
               </button>
@@ -311,24 +348,30 @@ const GamePanel: React.FC<Props> = ({
           <button
             onClick={handleDraw}
             disabled={isDrawDisabled}
-            title={!hasParticipants ? "Registra participantes para comenzar" : ""}
+            title={buttonTooltip}
             className={`
-              col-span-2 flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-xl sm:text-2xl shadow-lg transition-all
+              col-span-2 flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-xl sm:text-2xl shadow-lg transition-all relative overflow-hidden
               ${isDrawDisabled
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
                 : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white shadow-indigo-900/30 active:scale-95'
               }
             `}
           >
+            {isDrawDisabled && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-[1px] z-20">
+                 <span className="text-sm font-bold text-amber-400 px-4 py-2 text-center animate-pulse">{buttonTooltip}</span>
+              </div>
+            )}
             <Play fill="currentColor" size={26} />
-            {isAnimating ? 'Girando...' : 'SACAR BOLILLA'}
+            {isAnimating ? 'Girando...' : buttonLabel}
           </button>
           
           <button
             onClick={onReset}
-            className="col-span-2 text-xs sm:text-sm text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 py-2 rounded transition-colors flex items-center justify-center gap-2"
+            className={`col-span-2 text-xs sm:text-sm py-2 rounded transition-colors flex items-center justify-center gap-2 ${roundFinishedNeedsReset ? 'bg-amber-900/30 text-amber-400 border border-amber-500/30 animate-pulse hover:bg-amber-900/50' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'}`}
           >
-            <RotateCcw size={16} /> Resetear Sorteo
+            <RotateCcw size={16} /> 
+            {roundFinishedNeedsReset ? 'Resetear bolillas' : 'Resetear Sorteo'}
           </button>
         </div>
       </div>

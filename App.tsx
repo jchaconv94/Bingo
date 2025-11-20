@@ -47,7 +47,9 @@ const App: React.FC = () => {
       drawnBalls: [],
       history: [],
       lastCardSequence: 100,
-      selectedPattern: 'FULL' as PatternKey
+      selectedPattern: 'NONE' as PatternKey,
+      roundLocked: false,
+      gameRound: 1 // START AT ROUND 1
     };
     const loaded = loadFromStorage(LS_KEYS.GAME_STATE, defaults);
     // Ensure new property exists if loaded from old state
@@ -86,8 +88,6 @@ const App: React.FC = () => {
   const [showSidebar, setShowSidebar] = useState(false); // Default closed for floating behavior
 
   // --- Persistence (Solo Guardar) ---
-  // Como el estado inicial YA tiene los datos cargados, estos efectos no sobrescribirán con vacíos.
-
   useEffect(() => {
     localStorage.setItem(LS_KEYS.PARTICIPANTS, JSON.stringify(participants));
   }, [participants]);
@@ -112,7 +112,7 @@ const App: React.FC = () => {
     localStorage.setItem(LS_KEYS.SUBTITLE, JSON.stringify(bingoSubtitle));
   }, [bingoSubtitle]);
 
-  // Listen for fullscreen changes (e.g. user presses ESC)
+  // Listen for fullscreen changes
   useEffect(() => {
     const handleFullScreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -151,7 +151,6 @@ const App: React.FC = () => {
   };
 
   const handleRegister = (data: Omit<Participant, 'id' | 'cards'>, cardsCount: number) => {
-    // Validación simple de duplicados al registrar manualmente
     const isDuplicate = participants.some(p => p.dni.trim().toLowerCase() === data.dni.trim().toLowerCase());
     if (isDuplicate) {
       alert(`Ya existe un participante con el DNI ${data.dni}.`);
@@ -169,7 +168,7 @@ const App: React.FC = () => {
       currentSeq++;
       newParticipant.cards.push({
         id: `C${currentSeq.toString().padStart(4, '0')}`,
-        numbers: generateBingoCardNumbers() // NEW 5x5 GENERATOR
+        numbers: generateBingoCardNumbers()
       });
     }
 
@@ -195,11 +194,7 @@ const App: React.FC = () => {
 
   const handleDeleteAllParticipants = () => {
     if (participants.length === 0) return;
-    
-    const confirmMsg = "¡PELIGRO! ESTA ACCIÓN ES IRREVERSIBLE.\n\n¿Estás seguro de que deseas ELIMINAR A TODOS LOS PARTICIPANTES y sus cartones?\n\nSe perderá todo el registro de jugadores.";
-    
-    if (window.confirm(confirmMsg)) {
-      // Doble confirmación para seguridad
+    if (window.confirm("¡PELIGRO! ESTA ACCIÓN ES IRREVERSIBLE.\n\n¿Estás seguro de que deseas ELIMINAR A TODOS LOS PARTICIPANTES y sus cartones?")) {
       if (window.confirm("Confirma por segunda vez: ¿Borrar TODO?")) {
         setParticipants([]);
         addLog("⚠️ Se han eliminado todos los participantes del sistema.");
@@ -221,7 +216,7 @@ const App: React.FC = () => {
           ...p,
           cards: [...p.cards, {
             id: newCardId,
-            numbers: generateBingoCardNumbers() // NEW 5x5 GENERATOR
+            numbers: generateBingoCardNumbers()
           }]
         };
       }
@@ -244,8 +239,20 @@ const App: React.FC = () => {
 
   const handleDrawBall = () => {
     if (participants.length === 0) {
-      alert("¡Atención! No hay participantes registrados.\nPor favor, registra al menos un jugador antes de sacar una bolilla.");
+      alert("¡Atención! No hay participantes registrados.");
       return;
+    }
+    
+    if (gameState.selectedPattern === 'NONE') {
+      alert("Debes seleccionar una forma de ganar (patrón) antes de sacar una bolilla.");
+      return;
+    }
+
+    // 1. Verificar si ya se entregaron todos los premios
+    const allPrizesAwarded = prizes.length > 0 && prizes.every(p => p.isAwarded);
+    if (allPrizesAwarded) {
+       alert("¡JUEGO COMPLETADO!\n\nTodos los premios han sido entregados. Debes resetear el sorteo para iniciar una nueva partida.");
+       return;
     }
 
     const available = Array.from({ length: TOTAL_BALLS }, (_, i) => i + 1)
@@ -256,25 +263,17 @@ const App: React.FC = () => {
       return;
     }
 
-    // The actual random selection happens here, though visual animation is in GamePanel
-    // To sync with visual, GamePanel calls this after animation
     const randomIndex = Math.floor(Math.random() * available.length);
     const newBall = available[randomIndex];
-
-    // Generate Logs based on hits specific to the current PATTERN
     const time = new Date().toLocaleTimeString();
     const newLogs: string[] = [];
     
-    // Obtener los índices requeridos por el patrón actual
     const patternIndices = WIN_PATTERNS[gameState.selectedPattern].indices;
     let relevantHitFound = false;
 
     participants.forEach(p => {
       p.cards.forEach(c => {
-        // Encontramos en qué posición (0-24) está la bolilla en este cartón
         const ballIndexOnCard = c.numbers.indexOf(newBall);
-        
-        // Si el número existe en el cartón (index != -1) Y esa posición es requerida por el patrón actual
         if (ballIndexOnCard !== -1 && patternIndices.includes(ballIndexOnCard)) {
           relevantHitFound = true;
           newLogs.push(`${time}: ${p.name} ${p.surname} acertó la bolilla N° ${newBall} en el cartón ${c.id}`);
@@ -282,7 +281,6 @@ const App: React.FC = () => {
       });
     });
 
-    // If no one had the ball in a relevant position
     if (!relevantHitFound) {
       newLogs.push(`${time}: Bolilla N° ${newBall} fue sorteada`);
     }
@@ -293,20 +291,58 @@ const App: React.FC = () => {
       history: [...prev.history, ...newLogs]
     }));
 
-    // Check winners immediately
-    // We pass the updated list of balls manually because state update is async
     const updatedBalls = [...gameState.drawnBalls, newBall];
-    const newWinners = checkWinners(participants, updatedBalls, winners, gameState.selectedPattern);
+    
+    // PASS THE CURRENT ROUND to checkWinners to allow same card winning in different rounds
+    const potentialWinners = checkWinners(
+       participants, 
+       updatedBalls, 
+       winners, 
+       gameState.selectedPattern,
+       gameState.gameRound
+    );
 
-    if (newWinners.length > 0) {
-      setWinners(prev => [...prev, ...newWinners]);
+    if (potentialWinners.length > 0) {
       
-      // Show the summary modal with the batch of new winners
-      setCurrentBatchWinners(newWinners);
+      // --- AUTO AWARD LOGIC (Provisional, validated in Modal) ---
+      // Detectar el premio activo actual
+      const activePrizeIndex = prizes.findIndex(p => !p.isAwarded);
+      let currentPrize: Prize | null = null;
+      let finalWinners = potentialWinners;
 
-      newWinners.forEach(w => addLog(`🏆 BINGO! Ganador (${gameState.selectedPattern}): ${w.participantName} (${w.cardId})`));
+      if (activePrizeIndex !== -1) {
+        currentPrize = prizes[activePrizeIndex];
+        
+        // Asignar el premio a los ganadores (Snapshot)
+        finalWinners = potentialWinners.map(w => ({
+           ...w,
+           prizeId: currentPrize?.id,
+           prizeName: currentPrize?.name,
+           prizeDescription: currentPrize?.description
+        }));
+
+        // Marcar premio como entregado automáticamente (Puede ser revertido en modal)
+        setPrizes(prev => {
+           const newPrizes = [...prev];
+           newPrizes[activePrizeIndex] = { ...newPrizes[activePrizeIndex], isAwarded: true };
+           return newPrizes;
+        });
+        
+        // IMPORTANT: Set roundLocked to true.
+        setGameState(prev => ({
+           ...prev,
+           roundLocked: true,
+           history: [...prev.history, `🛑 Ronda finalizada. Premio asignado provisionalmente.`]
+        }));
+        
+        addLog(`🎁 Premio Asignado (Pendiente Confirmar): ${currentPrize.name}`);
+      }
+
+      setWinners(prev => [...prev, ...finalWinners]);
+      setCurrentBatchWinners(finalWinners);
+
+      finalWinners.forEach(w => addLog(`🏆 BINGO DETECTADO: ${w.participantName} (${w.cardId})`));
       
-      // Confetti effect
       confetti({
         particleCount: 200,
         spread: 100,
@@ -316,7 +352,61 @@ const App: React.FC = () => {
     }
   };
 
+  // --- LOGICA DE VALIDACION DE GANADORES (NUEVA) ---
+
+  const handleConfirmRound = () => {
+    // El usuario validó que todo está OK.
+    // Acciones: Resetear bolillas, limpiar patrón, incrementar ronda.
+    // El premio YA está marcado como entregado (se hizo al detectar ganador), así que lo dejamos así.
+    
+    setGameState(prev => ({
+      ...prev,
+      drawnBalls: [], // Reset Bolillas
+      history: [...prev.history, "✅ Ronda Confirmada. Preparando siguiente juego."],
+      selectedPattern: 'NONE', // Limpiar patrón
+      roundLocked: false, // Desbloquear juego
+      gameRound: prev.gameRound + 1 // Avanzar ronda interna
+    }));
+    
+    setCurrentBatchWinners([]);
+    addLog("✅ Sorteo continuado. Bolillas reseteadas.");
+  };
+
+  const handleRejectWinner = (invalidWinner: Winner) => {
+    // El usuario rechazó a un ganador.
+    // Acciones: Eliminar ganador, Resetear bolillas, Limpiar Patrón, DESMARCAR premio (reabrir).
+    
+    // 1. Eliminar ganador de la lista histórica
+    setWinners(prev => prev.filter(w => 
+       !(w.cardId === invalidWinner.cardId && w.timestamp === invalidWinner.timestamp)
+    ));
+
+    // 2. Reabrir el premio (si tenía uno asignado)
+    if (invalidWinner.prizeId) {
+       setPrizes(prev => prev.map(p => 
+          p.id === invalidWinner.prizeId ? { ...p, isAwarded: false } : p
+       ));
+       addLog(`↩️ Premio "${invalidWinner.prizeName}" reabierto.`);
+    }
+
+    // 3. Resetear estado del juego (Void Round)
+    setGameState(prev => ({
+       ...prev,
+       drawnBalls: [],
+       history: [...prev.history, `🚫 Ganador invalidado: ${invalidWinner.participantName}. Ronda reiniciada.`],
+       selectedPattern: 'NONE',
+       roundLocked: false
+       // NO incrementamos gameRound porque vamos a re-jugar la misma
+    }));
+
+    // 4. Cerrar modal (o actualizarlo si hubieran mas ganadores, pero la instrucción dice resetear todo)
+    setCurrentBatchWinners([]);
+    addLog("⚠️ Ronda invalidada y reiniciada.");
+  };
+
   const handleCloseWinnerModal = () => {
+    // Fallback close only (should normally use Confirm or Reject)
+    // If user clicks outside, we assume they want to review later, but game stays locked.
     setCurrentBatchWinners([]);
   };
 
@@ -335,52 +425,77 @@ const App: React.FC = () => {
   };
 
   const handleReset = () => {
-    if (!window.confirm("¿Reiniciar el sorteo? Esto borrará el progreso actual, pero mantendrá los participantes.")) return;
+    const pendingPrizesCount = prizes.filter(p => !p.isAwarded).length;
+    const totalPrizes = prizes.length;
+
+    // ESCENARIO 1: Aún hay premios por jugar (Siguiente Ronda MANUAL)
+    // Esto es si el usuario cerró el modal sin confirmar y quiere resetear manualmente
+    if (totalPrizes > 0 && pendingPrizesCount > 0) {
+       const confirmMsg = `¿Iniciar Sorteo por el SIGUIENTE PREMIO?\n\nAcciones:\n1. Se borrarán las bolillas sorteadas.\n2. Se mantendrá la lista de ganadores anteriores.\n3. La forma de ganar se reiniciará a vacío.`;
+       
+       if (!window.confirm(confirmMsg)) return;
+
+       // Resetear estado del juego: Borrar bolillas, Borrar Patrón, Quitar candado
+       setGameState(prev => ({
+          ...prev,
+          drawnBalls: [],
+          history: [],
+          selectedPattern: 'NONE',
+          roundLocked: false,
+          gameRound: prev.gameRound + 1 // INCREMENT ROUND TO ALLOW NEW WINNERS
+       }));
+       setCurrentBatchWinners([]); // Cerrar modal si estaba abierto
+       addLog("🔄 Iniciando nueva ronda para el siguiente premio.");
+       return;
+    }
+
+    // ESCENARIO 2: Reset Total
+    const confirmMsg = totalPrizes > 0 
+       ? "¡EVENTO COMPLETADO!\n\nTodos los premios han sido entregados.\n¿Deseas BORRAR TODO para iniciar un evento totalmente nuevo?"
+       : "¿Reiniciar el sorteo? Se borrará el progreso actual y la lista de ganadores.";
+
+    if (!window.confirm(confirmMsg)) return;
+
+    // Limpieza Total
     setGameState(prev => ({
       ...prev,
       drawnBalls: [],
-      history: []
+      history: [],
+      selectedPattern: 'NONE',
+      roundLocked: false,
+      gameRound: 1 // RESET ROUND TO 1
     }));
     setWinners([]);
     setCurrentBatchWinners([]);
+    
+    if (totalPrizes > 0) {
+       setPrizes([]); 
+       addLog("♻️ Evento finalizado y reseteado completamente.");
+    } else {
+       addLog("♻️ Juego reseteado.");
+    }
   };
 
   const handleImport = async (file: File) => {
     try {
       const imported = await parseExcel(file);
-
-      // 1. Crear un conjunto de DNIs existentes para búsqueda rápida
       const existingDNIs = new Set(participants.map(p => String(p.dni).trim().toLowerCase()));
       
-      // 2. Filtrar los importados que ya existen
       const uniqueNewParticipants = imported.filter(p => {
         const importedDni = String(p.dni).trim().toLowerCase();
-        // Solo importamos si NO existe en el conjunto actual
         return !existingDNIs.has(importedDni);
       });
 
       const duplicatesCount = imported.length - uniqueNewParticipants.length;
 
       if (uniqueNewParticipants.length === 0) {
-        alert(`No se importaron participantes.\nSe detectaron ${duplicatesCount} registros que ya existen en el sistema (basado en DNI).`);
+        alert(`No se importaron participantes. ${duplicatesCount} duplicados detectados.`);
         return;
       }
 
-      // 3. Mensaje de confirmación inteligente
-      let confirmMessage = "";
-      if (duplicatesCount > 0) {
-        confirmMessage = `Se encontraron ${imported.length} registros en el archivo:\n` +
-                         `• ${uniqueNewParticipants.length} nuevos participantes\n` +
-                         `• ${duplicatesCount} duplicados (serán omitidos)\n\n` +
-                         `¿Deseas importar los ${uniqueNewParticipants.length} nuevos?`;
-      } else {
-        confirmMessage = `Se encontraron ${uniqueNewParticipants.length} participantes nuevos. ¿Deseas importarlos?`;
-      }
-
-      if (window.confirm(confirmMessage)) {
+      if (window.confirm(`Importar ${uniqueNewParticipants.length} nuevos participantes? (${duplicatesCount} duplicados)`)) {
         setParticipants(prev => [...prev, ...uniqueNewParticipants]);
         
-        // Actualizar la secuencia de cartones para evitar IDs duplicados
         let maxSeq = gameState.lastCardSequence;
         uniqueNewParticipants.forEach(p => p.cards.forEach(c => {
            const num = parseInt(c.id.replace(/\D/g, ''));
@@ -388,97 +503,52 @@ const App: React.FC = () => {
         }));
         
         setGameState(prev => ({ ...prev, lastCardSequence: maxSeq }));
-        addLog(`Importados ${uniqueNewParticipants.length} participantes (omitidos ${duplicatesCount} duplicados)`);
+        addLog(`Importados ${uniqueNewParticipants.length} participantes.`);
       }
     } catch (e) {
       console.error(e);
-      alert("Error al importar el archivo. Asegúrate de que el formato sea correcto.");
+      alert("Error al importar archivo.");
     }
   };
 
   const handleDownloadCard = async (p: Participant, cid: string) => {
     const card = p.cards.find(c => c.id === cid);
     if (!card) return;
-
     try {
-      // Use Image generation for single card direct download (PNG)
       await downloadCardImage(p, card, bingoTitle, bingoSubtitle);
-    } catch (e) {
-      console.error(e);
-      alert("Error al generar la imagen PNG");
-    }
+    } catch (e) { console.error(e); alert("Error al generar imagen"); }
   };
 
-  // Centralized WhatsApp Opener to ensure tab reuse
   const openWhatsApp = (phone: string, text: string) => {
-    // Clean phone number
     const cleanPhone = phone.replace(/\D/g, '');
     const url = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${text}`;
-    // Using a specific name 'whatsapp_bingo_app' tells the browser to try reusing the window
-    // if it was opened by this script.
     const win = window.open(url, 'whatsapp_bingo_app');
-    if (win) {
-      win.focus();
-    }
+    if (win) win.focus();
   };
 
   const handleShareCard = async (p: Participant, cid: string) => {
     if (!p.phone) return;
-    
     const card = p.cards.find(c => c.id === cid);
     if (!card) return;
-
-    addLog(`Generando PDF del cartón ${cid} para ${p.name}...`);
-
-    // 1. Descargar PDF localmente (replaces the old PNG logic)
+    addLog(`Generando PDF para ${p.name}...`);
     try {
         await generateBingoCardsPDF(p, bingoTitle, bingoSubtitle, cid);
-        
-        // 2. Mensaje con salto de línea explícito (\n\n)
-        const message = `Hola ${p.name.toUpperCase()}, te adjunto el archivo PDF con tu cartón de Bingo Virtual #${card.id}.\n\n¡Imprímelo o juega desde el celular! 📄\n\n¡Mucha Suerte! 🎱🍀`;
-        const text = encodeURIComponent(message);
-        
-        // 3. Abrir usando el helper
-        // Small delay to allow download to start
-        setTimeout(() => {
-           openWhatsApp(p.phone!, text);
-        }, 1000);
-    } catch (e) {
-        console.error(e);
-        alert("Error al generar el PDF");
-    }
+        const message = `Hola ${p.name.toUpperCase()}, tu cartón de Bingo Virtual #${card.id} 📄\n\n¡Suerte! 🎱`;
+        setTimeout(() => openWhatsApp(p.phone!, encodeURIComponent(message)), 1000);
+    } catch (e) { console.error(e); alert("Error generando PDF"); }
   };
 
   const handleShareAllCards = async (p: Participant) => {
     if (!p.phone || p.cards.length === 0) return;
-
-    // Use a confirm if many cards to prevent accidental browser freezing
-    if (p.cards.length > 10 && !window.confirm(`¿Generar PDF con los ${p.cards.length} cartones de ${p.name}? Esto puede tomar unos segundos.`)) return;
-
-    addLog(`Generando PDF de cartones para ${p.name}...`);
-
-    // 1. Generate PDF and trigger download
-    // We cannot attach files via WhatsApp Web URL scheme, so we download it for the user
-    // and tell them to attach it.
+    if (p.cards.length > 10 && !window.confirm("¿Generar muchos cartones?")) return;
+    addLog(`Generando PDF masivo para ${p.name}...`);
     try {
       await generateBingoCardsPDF(p, bingoTitle, bingoSubtitle);
-      
-      // 2. Open WhatsApp with instructions
-      const message = `Hola ${p.name.toUpperCase()}, te adjunto el archivo PDF con tus ${p.cards.length} cartones de Bingo Virtual.\n\n¡Imprímelos o juega desde el celular! 📄\n\n¡Mucha suerte! 🎱🍀`;
-      const text = encodeURIComponent(message);
-      
-      // Small delay to allow the download to start visibly
-      setTimeout(() => {
-         openWhatsApp(p.phone!, text);
-      }, 1000);
-
-    } catch (error) {
-      console.error("Error generating PDF", error);
-      alert("Hubo un error al generar el PDF. Por favor intenta de nuevo.");
-    }
+      const message = `Hola ${p.name.toUpperCase()}, tus ${p.cards.length} cartones de Bingo Virtual 📄\n\n¡Suerte! 🎱`;
+      setTimeout(() => openWhatsApp(p.phone!, encodeURIComponent(message)), 1000);
+    } catch (error) { console.error(error); alert("Error generando PDF"); }
   };
 
-  // --- Prizes Handlers ---
   const handleAddPrize = (name: string, description: string) => {
     setPrizes(prev => [...prev, {
       id: generateId('PR'),
@@ -493,26 +563,50 @@ const App: React.FC = () => {
   };
 
   const handleRemovePrize = (id: string) => {
+    const prizeToRemove = prizes.find(p => p.id === id);
+    // Validation: Cannot remove awarded prize
+    if (prizeToRemove && prizeToRemove.isAwarded) {
+       alert("🚫 ACCIÓN BLOQUEADA\n\nNo se puede eliminar un premio que ya ha sido entregado.");
+       return;
+    }
+
+    const lastPrize = prizes.length > 0 ? prizes[prizes.length - 1] : null;
+    if (lastPrize && lastPrize.isAwarded) {
+       alert("🔒 EVENTO FINALIZADO\n\nEl último premio ya ha sido entregado. No es posible eliminar premios.");
+       return;
+    }
     if (window.confirm('¿Eliminar este premio?')) {
       setPrizes(prev => prev.filter(p => p.id !== id));
     }
   };
 
   const handleTogglePrize = (id: string) => {
-    setPrizes(prev => prev.map(p => p.id === id ? { ...p, isAwarded: !p.isAwarded } : p));
+    const prize = prizes.find(p => p.id === id);
+    if (!prize) return;
+
+    // LOGICA REQUERIDA: BLOQUEO TOTAL DE MANIPULACIÓN MANUAL DE ESTADO
+    
+    if (!prize.isAwarded) {
+       // Intentar marcar como entregado
+       alert("🚫 ACCIÓN MANUAL NO PERMITIDA\n\nLos premios se entregan AUTOMÁTICAMENTE cuando:\n1. El sistema detecta un ganador.\n2. Verificas al ganador.\n3. Confirmas el sorteo.");
+       return;
+    } else {
+       // Intentar desmarcar (ya está entregado)
+       alert("🔒 PREMIO CERRADO\n\nEste premio ya fue entregado automáticamente.\n\nSi hubo un error, debes INVALIDAR al ganador desde la alerta de Bingo para revertir el proceso.");
+       return;
+    }
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       
-      {/* --- FLOATING SIDEBAR (DRAWER) --- */}
       {/* Backdrop */}
       <div 
         className={`fixed inset-0 bg-black/70 backdrop-blur-[2px] z-[90] transition-opacity duration-300 ${showSidebar ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setShowSidebar(false)}
       />
 
-      {/* Sidebar Content */}
+      {/* Sidebar */}
       <aside 
         className={`fixed top-0 left-0 h-full w-[320px] bg-slate-900/95 border-r border-slate-800 shadow-2xl z-[100] transform transition-transform duration-300 ease-out overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4 ${showSidebar ? 'translate-x-0' : '-translate-x-full'}`}
       >
@@ -521,10 +615,7 @@ const App: React.FC = () => {
                <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
                Menú de Gestión
             </h3>
-            <button 
-              onClick={() => setShowSidebar(false)}
-              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
-            >
+            <button onClick={() => setShowSidebar(false)} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors">
               <X size={20} />
             </button>
          </div>
@@ -545,12 +636,11 @@ const App: React.FC = () => {
             onTogglePrize={handleTogglePrize}
           />
           
-          {/* Instructions Mini Panel */}
           <div className="bg-slate-900/30 border border-slate-800/50 rounded-xl p-3 text-[11px] text-slate-500 mt-auto">
-            <h4 className="font-bold text-slate-400 mb-1 text-[12px]">Atajos rápidos</h4>
+            <h4 className="font-bold text-slate-400 mb-1 text-[12px]">Reglas de Juego</h4>
             <ul className="list-disc list-inside space-y-0.5">
-              <li>Usa Excel para carga masiva.</li>
-              <li>El sorteo guarda estado automáticamente.</li>
+              <li>La partida dura hasta entregar todos los premios.</li>
+              <li>Resetear borra ganadores, bolillas y premios.</li>
             </ul>
           </div>
       </aside>
@@ -568,16 +658,16 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* 1. Modal Resumen de Ganadores (Aparece cuando alguien gana) */}
       {currentBatchWinners.length > 0 && (
         <WinnerModal 
           winners={currentBatchWinners} 
           onClose={handleCloseWinnerModal} 
           onViewDetails={handleViewDetailsFromSummary}
+          onConfirmRound={handleConfirmRound}
+          onRejectWinner={handleRejectWinner}
         />
       )}
 
-      {/* 2. Modal Detalle (Aparece al dar clic en el Ojo desde el Resumen o desde el Panel) */}
       {viewingDetailsData && (
         <WinnerDetailsModal 
           winner={viewingDetailsData.winner}
@@ -589,13 +679,14 @@ const App: React.FC = () => {
           onDeleteCard={handleDeleteCard}
           onDownloadCard={handleDownloadCard}
           onShareCard={(cardId) => handleShareCard(viewingDetailsData.participant, cardId)}
+          prizes={prizes}
+          allWinners={winners}
         />
       )}
 
       {/* Header */}
       <header className="bg-slate-900 border-b border-slate-800 py-3 px-6 flex items-center justify-between shadow-lg sticky top-0 z-20 h-14">
         <div className="flex items-center gap-4">
-           {/* Menu Toggle Button moved here for better UX */}
            <button 
                onClick={() => setShowSidebar(true)}
                className={`p-1.5 rounded-lg transition-colors border border-slate-700 bg-slate-800 text-cyan-400 hover:text-white hover:border-cyan-500/50`}
@@ -619,11 +710,9 @@ const App: React.FC = () => {
            </div>
 
            <div className="flex items-center gap-2">
-             
              <button 
                onClick={() => setShowTitleModal(true)}
                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
-               title="Personalizar Título y Descripción"
              >
                <Edit size={18} />
              </button>
@@ -631,7 +720,6 @@ const App: React.FC = () => {
              <button 
                onClick={toggleFullScreen}
                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
-               title={isFullscreen ? "Salir de Pantalla Completa" : "Pantalla Completa"}
              >
                {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
              </button>
@@ -639,13 +727,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Layout 
-          - ALWAYS use the full width layout logic since sidebar is now floating
-          - Sticky sidebars
-      */}
       <main className="flex-1 p-4 max-w-[1920px] mx-auto w-full grid grid-cols-1 gap-4 transition-all duration-300 items-start xl:grid-cols-[1fr_360px] 2xl:grid-cols-[1fr_500px]">
-        
-        {/* Center: Game */}
         <section className="flex flex-col gap-4">
           <GamePanel 
             drawnBalls={gameState.drawnBalls}
@@ -657,12 +739,10 @@ const App: React.FC = () => {
             onPatternChange={handlePatternChange}
             prizes={prizes}
             onTogglePrize={handleTogglePrize}
+            roundLocked={gameState.roundLocked || false}
           />
         </section>
 
-        {/* Right: Participants & Winners 
-            - Sticky right sidebar
-        */}
         <section className="h-[500px] xl:h-[calc(100vh-6rem)] xl:sticky xl:top-20">
           <ParticipantsPanel 
             participants={participants}
@@ -677,9 +757,9 @@ const App: React.FC = () => {
             currentPattern={gameState.selectedPattern}
             onShareCard={handleShareCard}
             onShareAllCards={handleShareAllCards}
+            prizes={prizes}
           />
         </section>
-
       </main>
     </div>
   );

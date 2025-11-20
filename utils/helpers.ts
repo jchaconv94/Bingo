@@ -1,4 +1,5 @@
 
+
 import { Participant, Winner, WinPattern, PatternKey } from '../types.ts';
 
 /**
@@ -57,6 +58,11 @@ const DIAG_MAIN = [0, 6, 12, 18, 24]; // TL to BR
 const DIAG_ANTI = [4, 8, 12, 16, 20]; // TR to BL
 
 export const WIN_PATTERNS: Record<PatternKey, WinPattern> = {
+  NONE: {
+    key: 'NONE',
+    label: '--- Seleccione Patrón ---',
+    indices: []
+  },
   FULL: {
     key: 'FULL',
     label: 'Cartón Lleno (Apagón)',
@@ -145,12 +151,19 @@ export const checkWinners = (
   participants: Participant[], 
   drawnBalls: number[], 
   existingWinners: Winner[],
-  patternKey: PatternKey
+  patternKey: PatternKey,
+  currentRound: number = 1
 ): Winner[] => {
   const newWinners: Winner[] = [];
   
   // Get the required indices for the current pattern
   const patternIndices = WIN_PATTERNS[patternKey].indices;
+
+  // SAFETY CHECK: If pattern is NONE or has no indices, no one can win.
+  // JS [].every() returns true, so we must block this.
+  if (patternIndices.length === 0) {
+    return [];
+  }
 
   // La bolilla ganadora es la última que se añadió a la lista
   const winningBall = drawnBalls[drawnBalls.length - 1];
@@ -169,9 +182,15 @@ export const checkWinners = (
       });
       
       if (isWinner) {
-        // Check if already recorded as winner for THIS card (generic check, might need refinement if playing multiple patterns sequentially)
-        // For now, we assume one winner entry per card per game.
-        const isAlreadyWinner = existingWinners.some(w => w.cardId === c.id);
+        // Check if already recorded as winner for THIS card, THIS PATTERN AND THIS ROUND.
+        // - Same Round + Same Pattern = DUPLICATE (Block)
+        // - Different Round (Reset balls) = NEW WIN (Allow)
+        // - Same Round + Different Pattern = NEW WIN (Allow)
+        const isAlreadyWinner = existingWinners.some(w => 
+          w.cardId === c.id && 
+          w.winningPattern === patternKey &&
+          (w.round || 1) === currentRound // Check round, default to 1 if undefined
+        );
         
         if (!isAlreadyWinner) {
           newWinners.push({
@@ -179,7 +198,10 @@ export const checkWinners = (
             participantName: `${p.name} ${p.surname}`,
             cardId: c.id,
             timestamp: Date.now(),
-            winningNumber: winningBall
+            winningNumber: winningBall,
+            winningPattern: patternKey, // Persist the pattern that caused the win
+            drawnBalls: [...drawnBalls], // Persist the balls drawn (Snapshot)
+            round: currentRound // Persist the round
           });
         }
       }
