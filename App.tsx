@@ -154,17 +154,20 @@ const App: React.FC = () => {
     try {
       const cloudData = await SheetAPI.fetchAll(sheetUrl);
       if (cloudData) {
+        // Invertimos el orden para que los nuevos (al final del sheet) aparezcan primero
+        const reversedData = [...cloudData].reverse();
+        
         setParticipants(prev => {
             // Comprobación simple para evitar re-renders innecesarios si los datos son idénticos
-            if (JSON.stringify(prev) === JSON.stringify(cloudData)) {
+            if (JSON.stringify(prev) === JSON.stringify(reversedData)) {
                 return prev;
             }
-            return cloudData;
+            return reversedData;
         });
         
         // Actualizar secuencia de cartones basada en lo importado
         let maxSeq = 100;
-        cloudData.forEach(p => p.cards.forEach(c => {
+        reversedData.forEach(p => p.cards.forEach(c => {
            const num = parseInt(c.id.replace(/\D/g, ''));
            if (!isNaN(num) && num > maxSeq) maxSeq = num;
         }));
