@@ -44,6 +44,24 @@ export const generateId = (prefix: string = ''): string => {
   return `${prefix}${Date.now().toString(36).slice(-4)}${Math.random().toString(36).slice(-4)}`.toUpperCase();
 };
 
+/**
+ * Convierte un texto a formato Title Case (primera letra de cada palabra en mayúscula).
+ * Útil para normalizar nombres y apellidos.
+ * Ejemplo: "JORDAN CHACON VILLACIS" -> "Jordan Chacon Villacis"
+ * Ejemplo: "jordan chacon villacis" -> "Jordan Chacon Villacis"
+ */
+export const toTitleCase = (text: string): string => {
+  if (!text) return text;
+
+  return text
+    .toLowerCase()
+    .trim()
+    .split(' ')
+    .filter(word => word.length > 0) // Eliminar espacios extras
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 // --- WINNING PATTERNS DEFINITION ---
 
 const ALL_INDICES = Array.from({ length: 25 }, (_, i) => i);
@@ -147,14 +165,14 @@ export const WIN_PATTERNS: Record<PatternKey, WinPattern> = {
 };
 
 export const checkWinners = (
-  participants: Participant[], 
-  drawnBalls: number[], 
+  participants: Participant[],
+  drawnBalls: number[],
   existingWinners: Winner[],
   patternKey: PatternKey,
   currentRound: number = 1
 ): Winner[] => {
   const newWinners: Winner[] = [];
-  
+
   // Get the required indices for the current pattern
   const patternIndices = WIN_PATTERNS[patternKey].indices;
 
@@ -166,10 +184,10 @@ export const checkWinners = (
 
   // La bolilla ganadora es la última que se añadió a la lista
   const winningBall = drawnBalls[drawnBalls.length - 1];
-  
+
   participants.forEach(p => {
     p.cards.forEach(c => {
-      
+
       // CRITICAL: Skip invalid cards (Anulados)
       if (c.isInvalid) return;
 
@@ -179,21 +197,21 @@ export const checkWinners = (
         // It matches if:
         // 1. It is the free space (0) - AND the pattern requires index 12 (implied in logic, 0 is always matched)
         // 2. OR the number has been drawn
-        if (numberAtPos === 0) return true; 
+        if (numberAtPos === 0) return true;
         return drawnBalls.includes(numberAtPos);
       });
-      
+
       if (isWinner) {
         // Check if already recorded as winner for THIS card, THIS PATTERN AND THIS ROUND.
         // - Same Round + Same Pattern = DUPLICATE (Block)
         // - Different Round (Reset balls) = NEW WIN (Allow)
         // - Same Round + Different Pattern = NEW WIN (Allow)
-        const isAlreadyWinner = existingWinners.some(w => 
-          w.cardId === c.id && 
+        const isAlreadyWinner = existingWinners.some(w =>
+          w.cardId === c.id &&
           w.winningPattern === patternKey &&
           (w.round || 1) === currentRound // Check round, default to 1 if undefined
         );
-        
+
         if (!isAlreadyWinner) {
           newWinners.push({
             participantId: p.id,
@@ -210,6 +228,6 @@ export const checkWinners = (
       }
     });
   });
-  
+
   return newWinners;
 };

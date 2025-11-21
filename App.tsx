@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { Participant, GameState, Winner, TOTAL_BALLS, NUMBERS_PER_CARD, BingoCard, PatternKey, Prize } from './types.ts';
-import { generateBingoCardNumbers, generateId, checkWinners, WIN_PATTERNS } from './utils/helpers.ts';
+import { generateBingoCardNumbers, generateId, checkWinners, WIN_PATTERNS, toTitleCase } from './utils/helpers.ts';
 import { exportToExcel, parseExcel, downloadCardImage, downloadAllCardsZip, generateBingoCardsPDF } from './services/exportService.ts';
 import { SheetAPI } from './services/googleSheetService.ts';
 import RegistrationPanel from './components/RegistrationPanel.tsx';
@@ -311,6 +311,8 @@ const App: React.FC = () => {
     const newParticipant: Participant = {
       id: generateId('P'),
       ...data,
+      name: toTitleCase(data.name),
+      surname: toTitleCase(data.surname),
       cards: []
     };
 
@@ -367,7 +369,12 @@ const App: React.FC = () => {
     const currentP = participants.find(p => p.id === id);
     if (!currentP) return;
 
-    const updatedP = { ...currentP, ...data };
+    const updatedP = {
+      ...currentP,
+      ...data,
+      name: toTitleCase(data.name),
+      surname: toTitleCase(data.surname)
+    };
 
     setParticipants(prev => prev.map(p => p.id === id ? updatedP : p));
     addLog(`Participante editado: ${data.name} ${data.surname}`);
@@ -809,10 +816,17 @@ const App: React.FC = () => {
       });
 
       if (confirmed) {
-        setParticipants(prev => [...uniqueNewParticipants, ...prev]);
+        // Normalizar nombres y apellidos de participantes importados
+        const normalizedParticipants = uniqueNewParticipants.map(p => ({
+          ...p,
+          name: toTitleCase(p.name),
+          surname: toTitleCase(p.surname)
+        }));
+
+        setParticipants(prev => [...normalizedParticipants, ...prev]);
 
         let maxSeq = gameState.lastCardSequence;
-        uniqueNewParticipants.forEach(p => p.cards.forEach(c => {
+        normalizedParticipants.forEach(p => p.cards.forEach(c => {
           const num = parseInt(c.id.replace(/\D/g, ''));
           if (!isNaN(num) && num > maxSeq) maxSeq = num;
         }));
@@ -824,7 +838,7 @@ const App: React.FC = () => {
           setIsSyncing(true);
           // Note: In a real production app, we would add a 'bulkSave' endpoint to GAS
           // to avoid making 100 fetch calls. For now, we loop.
-          for (const p of uniqueNewParticipants) {
+          for (const p of normalizedParticipants) {
             await SheetAPI.syncParticipant(sheetUrl, p);
           }
           setIsSyncing(false);
@@ -846,7 +860,7 @@ const App: React.FC = () => {
     const card = p.cards.find(c => c.id === cid);
     if (card) {
       await generateBingoCardsPDF(p, bingoTitle, bingoSubtitle, cid);
-      const url = `https://web.whatsapp.com/send?phone=${p.phone.replace(/\D/g, '')}&text=${encodeURIComponent(`Hola ${p.name}, cartón #${card.id}`)}`;
+      const url = `https://web.whatsapp.com/send?phone=${p.phone.replace(/\D/g, '')}&text=${encodeURIComponent(`Hola ${p.name}, este es tu cartón #${card.id}, para jugar en Bingo Virtual,\nBuena suerte! 🍀`)}`;
       window.open(url);
     }
   };
@@ -854,7 +868,7 @@ const App: React.FC = () => {
   const handleShareAllCards = async (p: Participant) => {
     if (!p.phone) return;
     await generateBingoCardsPDF(p, bingoTitle, bingoSubtitle);
-    const url = `https://web.whatsapp.com/send?phone=${p.phone.replace(/\D/g, '')}&text=${encodeURIComponent(`Hola ${p.name}, aquí tus cartones.`)}`;
+    const url = `https://web.whatsapp.com/send?phone=${p.phone.replace(/\D/g, '')}&text=${encodeURIComponent(`Hola ${p.name}, adjuntamos tus cartones para jugar en Bingo Virtual,\nBuena suerte! 🍀`)}`;
     window.open(url);
   };
 
