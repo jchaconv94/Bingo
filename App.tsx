@@ -14,7 +14,7 @@ import PrizesPanel from './components/PrizesPanel.tsx';
 import EditTitleModal from './components/EditTitleModal.tsx';
 import ConnectionModal from './components/ConnectionModal.tsx';
 import Login from './components/Login.tsx';
-import { Maximize2, Minimize2, PanelLeftOpen, Edit, FileText, Image as ImageIcon, Cloud, RefreshCw, Loader2, Link, Zap, LogOut } from 'lucide-react';
+import { Maximize2, Minimize2, PanelLeftOpen, Edit, FileText, Image as ImageIcon, Cloud, RefreshCw, Loader2, Link, Zap, LogOut, Menu, X } from 'lucide-react';
 import { useAlert, AlertAction } from './contexts/AlertContext.tsx';
 
 // LocalStorage Keys
@@ -113,6 +113,7 @@ const App: React.FC = () => {
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const totalCards = participants.reduce((acc, p) => acc + p.cards.length, 0);
 
@@ -1019,39 +1020,98 @@ const App: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Botón de estado de la nube */}
-          <button
-            onClick={() => setShowConnectionModal(true)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${sheetUrl ? (isSyncing ? 'bg-amber-900/30 text-amber-400 border-amber-500/50' : 'bg-emerald-900/30 text-emerald-400 border-emerald-500/50') : 'bg-slate-800 text-slate-500 border-slate-700 hover:bg-slate-700'}`}
-            title={sheetUrl ? "Conectado a Google Sheets" : "Configurar Nube"}
-          >
-            {isSyncing ? <Loader2 size={14} className="animate-spin" /> : (autoSync ? <Zap size={14} className="text-yellow-400 fill-yellow-400" /> : <Cloud size={14} />)}
-            <span className="hidden sm:inline">{sheetUrl ? (isSyncing ? 'Sincronizando...' : (autoSync ? 'Auto-Sync ON' : 'Online')) : 'Offline'}</span>
-          </button>
-
-          {sheetUrl && !isSyncing && (
+          {/* Desktop Menu */}
+          <div className="hidden md:flex items-center gap-3">
             <button
-              onClick={() => loadFromCloud(false)}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 border border-slate-700"
-              title="Forzar actualización desde Hoja de Cálculo"
+              onClick={() => setShowConnectionModal(true)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${sheetUrl ? (isSyncing ? 'bg-amber-900/30 text-amber-400 border-amber-500/50' : 'bg-emerald-900/30 text-emerald-400 border-emerald-500/50') : 'bg-slate-800 text-slate-500 border-slate-700 hover:bg-slate-700'}`}
+              title={sheetUrl ? "Conectado a Google Sheets" : "Configurar Nube"}
             >
-              <RefreshCw size={16} />
+              {isSyncing ? <Loader2 size={14} className="animate-spin" /> : (autoSync ? <Zap size={14} className="text-yellow-400 fill-yellow-400" /> : <Cloud size={14} />)}
+              <span className="hidden sm:inline">{sheetUrl ? (isSyncing ? 'Sincronizando...' : (autoSync ? 'Auto-Sync ON' : 'Online')) : 'Offline'}</span>
             </button>
+
+            {sheetUrl && !isSyncing && (
+              <button
+                onClick={() => loadFromCloud(false)}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 border border-slate-700"
+                title="Forzar actualización desde Hoja de Cálculo"
+              >
+                <RefreshCw size={16} />
+              </button>
+            )}
+
+            <div className="w-px h-6 bg-slate-800 mx-1"></div>
+
+            <button onClick={() => setShowTitleModal(true)} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700">
+              <Edit size={18} />
+            </button>
+
+            <button onClick={toggleFullScreen} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700">
+              {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+            </button>
+
+            <button onClick={handleLogout} className="p-1.5 rounded-lg bg-rose-950/30 hover:bg-rose-900/50 text-rose-400 border border-rose-900/50 ml-2" title="Cerrar Sesión">
+              <LogOut size={18} />
+            </button>
+          </div>
+
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            className="md:hidden p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700"
+          >
+            {showMobileMenu ? <X size={20} /> : <Menu size={20} />}
+          </button>
+
+          {/* Mobile Menu Dropdown */}
+          {showMobileMenu && (
+            <div className="absolute top-16 right-4 w-64 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-4 flex flex-col gap-3 z-50 md:hidden">
+              <button
+                onClick={() => { setShowConnectionModal(true); setShowMobileMenu(false); }}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all border w-full ${sheetUrl ? (isSyncing ? 'bg-amber-900/30 text-amber-400 border-amber-500/50' : 'bg-emerald-900/30 text-emerald-400 border-emerald-500/50') : 'bg-slate-800 text-slate-500 border-slate-700 hover:bg-slate-700'}`}
+              >
+                {isSyncing ? <Loader2 size={16} className="animate-spin" /> : (autoSync ? <Zap size={16} className="text-yellow-400 fill-yellow-400" /> : <Cloud size={16} />)}
+                <span>{sheetUrl ? (isSyncing ? 'Sincronizando...' : (autoSync ? 'Auto-Sync ON' : 'Online')) : 'Configurar Nube'}</span>
+              </button>
+
+              {sheetUrl && !isSyncing && (
+                <button
+                  onClick={() => { loadFromCloud(false); setShowMobileMenu(false); }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 border border-slate-700 w-full"
+                >
+                  <RefreshCw size={18} />
+                  <span>Sincronizar Ahora</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => { setShowTitleModal(true); setShowMobileMenu(false); }}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 w-full"
+              >
+                <Edit size={18} />
+                <span>Editar Título</span>
+              </button>
+
+              <button
+                onClick={() => { toggleFullScreen(); setShowMobileMenu(false); }}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 w-full"
+              >
+                {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                <span>{isFullscreen ? 'Salir Pantalla Completa' : 'Pantalla Completa'}</span>
+              </button>
+
+              <div className="h-px bg-slate-800 my-1"></div>
+
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg bg-rose-950/30 hover:bg-rose-900/50 text-rose-400 border border-rose-900/50 w-full"
+              >
+                <LogOut size={18} />
+                <span>Cerrar Sesión</span>
+              </button>
+            </div>
           )}
-
-          <div className="w-px h-6 bg-slate-800 mx-1 hidden sm:block"></div>
-
-          <button onClick={() => setShowTitleModal(true)} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700">
-            <Edit size={18} />
-          </button>
-
-          <button onClick={toggleFullScreen} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700">
-            {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-          </button>
-
-          <button onClick={handleLogout} className="p-1.5 rounded-lg bg-rose-950/30 hover:bg-rose-900/50 text-rose-400 border border-rose-900/50 ml-2" title="Cerrar Sesión">
-            <LogOut size={18} />
-          </button>
         </div>
       </header>
 
