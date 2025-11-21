@@ -31,7 +31,7 @@ const LS_KEYS = {
 };
 
 // URL por defecto proporcionada por el usuario
-const DEFAULT_SHEET_URL = "https://script.google.com/macros/s/AKfycbwdNFDlQ2Hq7bFKEO1KpzUk5NeOh847jPjGJVlHNqI9TiW1nqP6NxnrT9OmHH2N6HvBsw/exec";
+const DEFAULT_SHEET_URL = "https://script.google.com/macros/s/AKfycbz7n1aPpHRm-IvqT-fj8qBUmCWBM_AR6KtyMT0oGG5xUdfZV2P2NnAu3U89MuAPqukL-w/exec";
 
 const loadFromStorage = <T,>(key: string, fallback: T): T => {
   try {
@@ -130,7 +130,7 @@ const App: React.FC = () => {
   // Carga inicial desde Google Sheets - Solo si está autenticado
   useEffect(() => {
     if (sheetUrl && isAuthenticated) {
-      loadFromCloud(); 
+      loadFromCloud();
     }
   }, [isAuthenticated]);
 
@@ -157,21 +157,21 @@ const App: React.FC = () => {
 
     setIsLoginLoading(true);
     try {
-       const result = await SheetAPI.login(sheetUrl, user, pass);
-       if (result.success) {
-          setIsAuthenticated(true);
-          sessionStorage.setItem('bingo_auth', 'true');
-          // Cargar datos inmediatamente al loguearse
-          loadFromCloud();
-          return true;
-       } else {
-          return false;
-       }
+      const result = await SheetAPI.login(sheetUrl, user, pass);
+      if (result.success) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem('bingo_auth', 'true');
+        // Cargar datos inmediatamente al loguearse
+        loadFromCloud();
+        return true;
+      } else {
+        return false;
+      }
     } catch (e) {
-       console.error(e);
-       return false;
+      console.error(e);
+      return false;
     } finally {
-       setIsLoginLoading(false);
+      setIsLoginLoading(false);
     }
   };
 
@@ -884,25 +884,25 @@ const App: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <>
-        <Login 
-           onLogin={handleLogin} 
-           isLoading={isLoginLoading}
-           onOpenSettings={() => setShowConnectionModal(true)}
+        <Login
+          onLogin={handleLogin}
+          isLoading={isLoginLoading}
+          onOpenSettings={() => setShowConnectionModal(true)}
         />
         {showConnectionModal && (
-            <ConnectionModal
+          <ConnectionModal
             currentUrl={sheetUrl}
             currentAutoSync={autoSync}
             currentInterval={syncInterval}
             onSave={(url, newAutoSync, newInterval) => {
-                setSheetUrl(url);
-                setAutoSync(newAutoSync);
-                setSyncInterval(newInterval);
-                // No cargamos datos aquí, esperamos al login
+              setSheetUrl(url);
+              setAutoSync(newAutoSync);
+              setSyncInterval(newInterval);
+              // No cargamos datos aquí, esperamos al login
             }}
             onClose={() => setShowConnectionModal(false)}
-            onSyncNow={() => {}} // Deshabilitado en login
-            />
+            onSyncNow={() => { }} // Deshabilitado en login
+          />
         )}
       </>
     );
@@ -1050,7 +1050,7 @@ const App: React.FC = () => {
           </button>
 
           <button onClick={handleLogout} className="p-1.5 rounded-lg bg-rose-950/30 hover:bg-rose-900/50 text-rose-400 border border-rose-900/50 ml-2" title="Cerrar Sesión">
-             <LogOut size={18} />
+            <LogOut size={18} />
           </button>
         </div>
       </header>
