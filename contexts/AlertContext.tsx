@@ -1,7 +1,15 @@
+
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { AlertTriangle, CheckCircle, Info, XCircle, HelpCircle } from 'lucide-react';
 
 type AlertType = 'info' | 'success' | 'warning' | 'danger' | 'confirm';
+
+export interface AlertAction {
+  label: string;
+  onClick: () => void;
+  icon?: React.ReactNode;
+  className?: string;
+}
 
 interface AlertOptions {
   title?: string;
@@ -9,6 +17,7 @@ interface AlertOptions {
   type?: AlertType;
   confirmText?: string;
   cancelText?: string;
+  actions?: AlertAction[]; // Nuevas acciones personalizadas
 }
 
 interface AlertContextType {
@@ -83,7 +92,7 @@ export const AlertProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       {/* Modal Overlay */}
       {isOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className={`bg-slate-900 border rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-300 transform scale-100 ${getColors()}`}>
+          <div className={`bg-slate-900 border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300 transform scale-100 ${getColors()}`}>
             
             <div className="p-6 text-center">
                 <div className="flex justify-center mb-4">
@@ -100,30 +109,53 @@ export const AlertProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     {config.message}
                 </p>
 
-                <div className="flex gap-3 justify-center">
-                    {config.type === 'confirm' ? (
-                        <>
-                            <button
-                                onClick={() => handleClose(false)}
-                                className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl transition-colors border border-slate-700"
-                            >
-                                {config.cancelText || 'Cancelar'}
-                            </button>
+                <div className="flex flex-col gap-3">
+                    {/* Renderizado de acciones personalizadas */}
+                    {config.actions && config.actions.length > 0 && (
+                        <div className="flex flex-col gap-2 mb-2 w-full">
+                           {config.actions.map((action, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => {
+                                   action.onClick();
+                                   // Opcional: cerrar modal tras acción, o dejarlo abierto.
+                                   // Por ahora no cerramos automáticamente para permitir múltiples descargas.
+                                }}
+                                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all text-sm ${action.className || 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-600'}`}
+                              >
+                                {action.icon}
+                                {action.label}
+                              </button>
+                           ))}
+                           <div className="h-px bg-slate-800 w-full my-1"></div>
+                        </div>
+                    )}
+
+                    <div className="flex gap-3 justify-center w-full">
+                        {config.type === 'confirm' ? (
+                            <>
+                                <button
+                                    onClick={() => handleClose(false)}
+                                    className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl transition-colors border border-slate-700"
+                                >
+                                    {config.cancelText || 'Cancelar'}
+                                </button>
+                                <button
+                                    onClick={() => handleClose(true)}
+                                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-cyan-900/30"
+                                >
+                                    {config.confirmText || 'Confirmar'}
+                                </button>
+                            </>
+                        ) : (
                             <button
                                 onClick={() => handleClose(true)}
-                                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-cyan-900/30"
+                                className="w-full px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors border border-slate-600"
                             >
-                                {config.confirmText || 'Confirmar'}
+                                {config.actions && config.actions.length > 0 ? 'Cerrar' : 'Entendido'}
                             </button>
-                        </>
-                    ) : (
-                        <button
-                            onClick={() => handleClose(true)}
-                            className="w-full px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors border border-slate-600"
-                        >
-                            Entendido
-                        </button>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
           </div>

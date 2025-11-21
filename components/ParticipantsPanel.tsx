@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, Users, Medal, Ticket, Edit2, Trash2, Save, X, Eye, EyeOff, CreditCard, ChevronDown, ChevronUp, ScanEye, Phone, Fingerprint, MessageCircle, FileText, MoreVertical } from 'lucide-react';
 import { Participant, Winner, BingoCard as BingoCardType, PatternKey, Prize } from '../types.ts';
@@ -20,6 +21,7 @@ interface Props {
   onShareCard?: (participant: Participant, cardId: string) => void;
   onShareAllCards?: (participant: Participant) => void;
   prizes?: Prize[];
+  totalCards?: number;
 }
 
 const ParticipantsPanel: React.FC<Props> = ({ 
@@ -35,7 +37,8 @@ const ParticipantsPanel: React.FC<Props> = ({
   currentPattern,
   onShareCard,
   onShareAllCards,
-  prizes = []
+  prizes = [],
+  totalCards = 0
 }) => {
   const { showAlert, showConfirm } = useAlert();
   const [search, setSearch] = useState('');
@@ -166,6 +169,11 @@ const ParticipantsPanel: React.FC<Props> = ({
                 <span className="text-[10px] font-medium text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded-full border border-slate-700">
                   {participants.length}
                 </span>
+                {totalCards > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full border border-emerald-800/50 ml-1">
+                    <Ticket size={10} /> {totalCards}
+                  </span>
+                )}
               </h2>
               
               <div className="flex gap-1">

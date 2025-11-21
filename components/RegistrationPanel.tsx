@@ -1,6 +1,6 @@
 
-import React, { useState, useRef } from 'react';
-import { UserPlus, Upload, FileSpreadsheet, Archive, Save, Ticket, User, Hash, Phone, ChevronRight } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { UserPlus, Upload, FileSpreadsheet, Archive, Save, Ticket, User, Hash, Phone, ChevronRight, RefreshCw } from 'lucide-react';
 import { Participant } from '../types.ts';
 
 interface Props {
@@ -9,19 +9,35 @@ interface Props {
   onExport: () => void;
   onGenerateAllImages: () => void;
   totalParticipants: number;
+  totalCards: number;
 }
 
-const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, onGenerateAllImages, totalParticipants }) => {
+// Función auxiliar para generar ID numérico de 8 dígitos
+const generateRandomDNI = () => {
+  return Math.floor(10000000 + Math.random() * 90000000).toString();
+};
+
+const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, onGenerateAllImages, totalParticipants, totalCards }) => {
   const [formData, setFormData] = useState({
     name: '',
     surname: '',
-    dni: '',
+    dni: generateRandomDNI(), // Inicializar con un ID generado
     phone: '',
     cardsCount: 1
   });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null); // Referencia para el foco
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Solo permite números y máximo 9 dígitos
+    const value = e.target.value.replace(/\D/g, '').slice(0, 9);
+    setFormData(prev => ({ ...prev, phone: value }));
+  };
+
+  const regenerateDNI = () => {
+    setFormData(prev => ({ ...prev, dni: generateRandomDNI() }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +58,7 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, on
     setFormData({
       name: '',
       surname: '',
-      dni: '',
+      dni: generateRandomDNI(), // Generar nuevo ID para el siguiente usuario
       phone: '',
       cardsCount: 1
     });
@@ -71,10 +87,18 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, on
             </h2>
         </div>
         <div className="flex flex-col items-end">
-            <span className="text-[10px] font-bold uppercase text-slate-500 mb-1 tracking-wider">Total Registrados</span>
-            <span className="text-2xl font-black text-white bg-slate-950 px-4 py-1 rounded-lg border border-slate-800 shadow-inner font-mono tracking-tight">
-            {totalParticipants}
-            </span>
+            <span className="text-[10px] font-bold uppercase text-slate-500 mb-1 tracking-wider">Estadísticas</span>
+            <div className="flex items-center gap-3">
+               <div className="flex flex-col items-end">
+                  <span className="text-[9px] text-slate-400">Jugadores</span>
+                  <span className="text-lg font-black text-white leading-none">{totalParticipants}</span>
+               </div>
+               <div className="w-px h-8 bg-slate-700/50"></div>
+               <div className="flex flex-col items-end">
+                  <span className="text-[9px] text-emerald-500 font-bold">Cartones</span>
+                  <span className="text-lg font-black text-emerald-400 leading-none">{totalCards}</span>
+               </div>
+            </div>
         </div>
       </div>
 
@@ -120,13 +144,25 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, on
                     <Hash size={20} />
                 </div>
                 <input
-                type="text"
-                required
-                value={formData.dni}
-                onChange={e => setFormData({...formData, dni: e.target.value})}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-3 py-3.5 text-sm text-white placeholder-slate-600 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 outline-none transition-all shadow-sm"
-                placeholder="DNI / ID"
+                  type="text"
+                  required
+                  value={formData.dni}
+                  onChange={e => {
+                      // Permitir edición manual pero restringir a números y 8 dígitos
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 8);
+                      setFormData({...formData, dni: val});
+                  }}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-10 py-3.5 text-sm text-white placeholder-slate-600 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 outline-none transition-all shadow-sm font-mono tracking-widest"
+                  placeholder="ID AUTO"
                 />
+                <button
+                  type="button"
+                  onClick={regenerateDNI}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 transition-colors p-1 rounded-md hover:bg-slate-800"
+                  title="Generar nuevo ID aleatorio"
+                >
+                    <RefreshCw size={14} />
+                </button>
             </div>
 
             {/* Phone */}
@@ -135,11 +171,12 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, on
                     <Phone size={20} />
                 </div>
                 <input
-                type="tel"
-                value={formData.phone}
-                onChange={e => setFormData({...formData, phone: e.target.value})}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-3 py-3.5 text-sm text-white placeholder-slate-600 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 outline-none transition-all shadow-sm"
-                placeholder="Teléfono"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handlePhoneChange}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-3 py-3.5 text-sm text-white placeholder-slate-600 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 outline-none transition-all shadow-sm font-mono"
+                  placeholder="9 Digitos"
+                  maxLength={9}
                 />
             </div>
           </div>

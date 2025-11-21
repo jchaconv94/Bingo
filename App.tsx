@@ -11,8 +11,8 @@ import WinnerModal from './components/WinnerModal.tsx';
 import WinnerDetailsModal from './components/WinnerDetailsModal.tsx';
 import PrizesPanel from './components/PrizesPanel.tsx';
 import EditTitleModal from './components/EditTitleModal.tsx';
-import { Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, Edit, X } from 'lucide-react';
-import { useAlert } from './contexts/AlertContext.tsx';
+import { Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, Edit, X, FileText, Image as ImageIcon, Download } from 'lucide-react';
+import { useAlert, AlertAction } from './contexts/AlertContext.tsx';
 
 // LocalStorage Keys
 const LS_KEYS = {
@@ -84,6 +84,9 @@ const App: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
 
+  // Calculamos el total de cartones en juego
+  const totalCards = participants.reduce((acc, p) => acc + p.cards.length, 0);
+
   // --- Persistence ---
   useEffect(() => { localStorage.setItem(LS_KEYS.PARTICIPANTS, JSON.stringify(participants)); }, [participants]);
   useEffect(() => { localStorage.setItem(LS_KEYS.GAME_STATE, JSON.stringify(gameState)); }, [gameState]);
@@ -143,7 +146,7 @@ const App: React.FC = () => {
   const handleRegister = (data: Omit<Participant, 'id' | 'cards'>, cardsCount: number) => {
     const isDuplicate = participants.some(p => p.dni.trim().toLowerCase() === data.dni.trim().toLowerCase());
     if (isDuplicate) {
-      showAlert({ title: 'DNI Duplicado', message: `Ya existe un participante con el DNI ${data.dni}.`, type: 'warning' });
+      showAlert({ title: 'DNI Duplicado', message: `Ya existe un participante con ID ${data.dni}.`, type: 'warning' });
       return;
     }
 
@@ -165,6 +168,41 @@ const App: React.FC = () => {
     setParticipants(prev => [newParticipant, ...prev]);
     setGameState(prev => ({ ...prev, lastCardSequence: currentSeq }));
     addLog(`Registrado ${newParticipant.name} con ${cardsCount} cartones`);
+
+    // Preparamos las acciones para el mensaje de éxito
+    const successActions: AlertAction[] = [];
+
+    if (cardsCount === 1) {
+      // Opción 1 Cartón: PNG y PDF individual
+      const singleCard = newParticipant.cards[0];
+      successActions.push({
+         label: 'Descargar PNG',
+         onClick: () => downloadCardImage(newParticipant, singleCard, bingoTitle, bingoSubtitle),
+         icon: <ImageIcon size={18} />,
+         className: 'bg-slate-800 hover:bg-cyan-900/50 text-cyan-400 border-cyan-800'
+      });
+      successActions.push({
+         label: 'Descargar PDF',
+         onClick: () => generateBingoCardsPDF(newParticipant, bingoTitle, bingoSubtitle, singleCard.id),
+         icon: <FileText size={18} />,
+         className: 'bg-slate-800 hover:bg-emerald-900/50 text-emerald-400 border-emerald-800'
+      });
+    } else {
+      // Opción Varios Cartones: PDF con todos
+      successActions.push({
+        label: 'PDF con todos los cartones',
+        onClick: () => generateBingoCardsPDF(newParticipant, bingoTitle, bingoSubtitle), // Generates all
+        icon: <FileText size={18} />,
+        className: 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg'
+      });
+    }
+
+    showAlert({ 
+      title: 'Registro Exitoso', 
+      message: `${newParticipant.name} ha sido registrado con ${cardsCount} cartones.`, 
+      type: 'success',
+      actions: successActions
+    });
   };
 
   const handleEditParticipant = (id: string, data: { name: string, surname: string, dni: string, phone: string }) => {
@@ -172,6 +210,7 @@ const App: React.FC = () => {
       p.id === id ? { ...p, ...data } : p
     ));
     addLog(`Participante editado: ${data.name} ${data.surname}`);
+    showAlert({ title: 'Actualización Exitosa', message: 'Los datos del participante han sido actualizados.', type: 'success' });
   };
 
   const handleDeleteParticipant = async (id: string) => {
@@ -200,6 +239,7 @@ const App: React.FC = () => {
     if (confirmed) {
       setParticipants(prev => prev.filter(p => p.id !== id));
       addLog(`Participante eliminado: ${p.name} ${p.surname}`);
+      showAlert({ title: 'Eliminado', message: 'El participante ha sido eliminado correctamente.', type: 'success' });
     }
   };
 
@@ -236,6 +276,7 @@ const App: React.FC = () => {
       if (confirmed2) {
         setParticipants([]);
         addLog("⚠️ Se han eliminado todos los participantes del sistema.");
+        showAlert({ title: 'Limpieza Completa', message: 'Todos los participantes han sido eliminados.', type: 'success' });
       }
     }
   };
@@ -243,6 +284,22 @@ const App: React.FC = () => {
   const handleAddCard = (participantId: string) => {
     const newSeq = gameState.lastCardSequence + 1;
     const newCardId = `C${newSeq.toString().padStart(4, '0')}`;
+    
+    // Encontrar participante actual para generar el objeto actualizado (necesario para las funciones de exportación dentro del closure)
+    const currentParticipant = participants.find(p => p.id === participantId);
+    
+    if (!currentParticipant) return;
+
+    const newCard = {
+      id: newCardId,
+      numbers: generateBingoCardNumbers()
+    };
+    
+    // Objeto temporal con el nuevo cartón para pasarlo a las funciones de exportar inmediatamente
+    const updatedParticipantForExport = {
+       ...currentParticipant,
+       cards: [newCard, ...currentParticipant.cards] // Añadimos al principio igual que en el setParticipants
+    };
 
     setGameState(prev => ({ ...prev, lastCardSequence: newSeq }));
 
@@ -250,14 +307,34 @@ const App: React.FC = () => {
       if (p.id === participantId) {
         return {
           ...p,
-          cards: [{
-            id: newCardId,
-            numbers: generateBingoCardNumbers()
-          }, ...p.cards]
+          cards: [newCard, ...p.cards]
         };
       }
       return p;
     }));
+
+    // Acciones para el nuevo cartón
+    const successActions: AlertAction[] = [
+      {
+        label: 'Descargar PNG',
+        onClick: () => downloadCardImage(updatedParticipantForExport, newCard, bingoTitle, bingoSubtitle),
+        icon: <ImageIcon size={18} />,
+        className: 'bg-slate-800 hover:bg-cyan-900/50 text-cyan-400 border-cyan-800'
+      },
+      {
+        label: 'Descargar PDF',
+        onClick: () => generateBingoCardsPDF(updatedParticipantForExport, bingoTitle, bingoSubtitle, newCard.id),
+        icon: <FileText size={18} />,
+        className: 'bg-slate-800 hover:bg-emerald-900/50 text-emerald-400 border-emerald-800'
+      }
+    ];
+
+    showAlert({ 
+       title: 'Cartón Agregado', 
+       message: `Se ha añadido exitosamente el cartón #${newCardId} a ${currentParticipant.name}.`, 
+       type: 'success',
+       actions: successActions
+    });
   };
 
   const handleDeleteCard = async (participantId: string, cardId: string) => {
@@ -302,6 +379,7 @@ const App: React.FC = () => {
     if (isWinningCard) {
       addLog(`Cartón ganador #${cardId} eliminado manualmente del participante ${participantId}.`);
     }
+    showAlert({ title: 'Cartón Eliminado', message: `El cartón #${cardId} ha sido eliminado correctamente.`, type: 'success' });
   };
 
   const handleDrawBall = async () => {
@@ -725,6 +803,7 @@ const App: React.FC = () => {
               onExport={() => exportToExcel(participants)}
               onGenerateAllImages={() => downloadAllCardsZip(participants, bingoTitle, bingoSubtitle)}
               totalParticipants={participants.length}
+              totalCards={totalCards}
             />
             
             <PrizesPanel 
@@ -859,6 +938,7 @@ const App: React.FC = () => {
             onShareCard={handleShareCard}
             onShareAllCards={handleShareAllCards}
             prizes={prizes}
+            totalCards={totalCards}
           />
         </section>
       </main>

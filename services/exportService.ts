@@ -168,7 +168,7 @@ const generateBingoCardSVG = (participant: Participant, card: BingoCard, title: 
     
     <line x1="0" y1="45" x2="350" y2="45" stroke="#e2e8f0" stroke-width="1"/>
     
-    <text x="400" y="0" font-size="12" font-weight="800" fill="#666666" letter-spacing="1">DNI/ID</text>
+    <text x="400" y="0" font-size="12" font-weight="800" fill="#666666" letter-spacing="1">ID/DNI</text>
     <text x="400" y="30" font-size="24" font-weight="700" fill="#222222">${dniEsc}</text>
   </g>
   
