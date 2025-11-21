@@ -130,7 +130,6 @@ const GamePanel: React.FC<Props> = ({
   }, [lastBall]);
 
   // Efecto para abrir el modal automáticamente al cambiar de patrón
-  /*
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -140,7 +139,7 @@ const GamePanel: React.FC<Props> = ({
       setShowPatternPreview(true);
     }
   }, [currentPattern]);
-*/
+
   const handleDraw = () => {
     if (isAnimating) return;
     setIsAnimating(true);

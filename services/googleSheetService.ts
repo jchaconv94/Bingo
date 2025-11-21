@@ -9,6 +9,25 @@ export interface ApiResponse {
 }
 
 export const SheetAPI = {
+  // Método para autenticación
+  async login(url: string, user: string, pass: string): Promise<ApiResponse> {
+    try {
+        const endpoint = `${url}?action=login`;
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            body: JSON.stringify({ user, pass }),
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            },
+        });
+        const json = await response.json();
+        return json;
+    } catch (error) {
+        console.error("Login Error:", error);
+        return { success: false, error: String(error) };
+    }
+  },
+
   // Método genérico para enviar datos (Google Apps Script requiere POST para payloads JSON o GET para queries simples)
   // Usamos "no-cors" en fetch standard, pero para recibir respuesta JSON de GAS necesitamos un truco.
   // GAS devuelve redirects, fetch los sigue.
