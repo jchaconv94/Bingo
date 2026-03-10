@@ -78,58 +78,63 @@ const BingoCard: React.FC<Props> = ({
 
       {/* Top Bar: ID and Actions */}
       <div className={`
-        flex items-center justify-between bg-slate-950 border-b border-slate-800
-        ${isCompact ? 'px-3 py-1.5' : 'px-4 py-2.5'}
+        flex flex-col bg-slate-950 border-b border-slate-800
+        ${isCompact ? 'p-2' : 'p-3'}
       `}>
-        <div className="flex flex-col leading-none">
-          <span className={`uppercase font-bold text-slate-500 tracking-widest ${isCompact ? 'text-[7px]' : 'text-[9px]'}`}>
-            Cartón N°
-          </span>
-          <span className={`font-mono font-black tracking-tight ${isInvalid ? 'text-rose-900' : 'text-white'} ${isCompact ? 'text-base' : 'text-2xl'}`}>
-            {card.id}
-          </span>
+        <div className="flex items-start justify-between w-full">
+          <div className="flex flex-col leading-none">
+            <span className={`uppercase font-bold text-slate-500 tracking-widest ${isCompact ? 'text-[7px]' : 'text-[9px]'}`}>
+              Cartón N°
+            </span>
+            <span className={`font-mono font-black tracking-tight ${isInvalid ? 'text-rose-900' : 'text-white'} ${isCompact ? 'text-lg' : 'text-2xl'}`}>
+              {card.id}
+            </span>
+          </div>
+
+          <div className="flex flex-col items-end gap-1">
+            {isWinner && (
+              <div className={`font-black uppercase bg-amber-500 text-slate-950 rounded px-2 py-0.5 animate-pulse ${isCompact ? 'text-[9px]' : 'text-xs'}`}>
+                WINNER
+              </div>
+            )}
+            {isInvalid && (
+               <div className={`font-black uppercase bg-rose-900 text-rose-400 rounded px-2 py-0.5 ${isCompact ? 'text-[9px]' : 'text-xs'}`}>
+                  VOID
+               </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-1">
-          {isWinner && (
-            <div className={`font-black uppercase bg-amber-500 text-slate-950 rounded px-2 py-0.5 animate-pulse ${isCompact ? 'text-[9px]' : 'text-xs'}`}>
-              WINNER
-            </div>
-          )}
-          {isInvalid && (
-             <div className={`font-black uppercase bg-rose-900 text-rose-400 rounded px-2 py-0.5 ${isCompact ? 'text-[9px]' : 'text-xs'}`}>
-                VOID
-             </div>
-          )}
-          
-          {!readOnly && (
-            <div className="flex gap-1 pl-2 border-l border-slate-800 ml-1 relative z-50">
-              {hasPhone && onShare && (
-                <button 
-                  onClick={() => onShare(card.id)} 
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/50 transition-colors"
-                  title="Enviar a WhatsApp"
-                >
-                  <MessageCircle size={isCompact ? 14 : 16} />
-                </button>
-              )}
+        {!readOnly && (
+          <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-slate-800/50 w-full relative z-50">
+            {hasPhone && onShare && (
               <button 
-                onClick={() => onDownload(card.id)} 
-                className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/50 transition-colors"
-                title="Descargar Imagen"
+                onClick={() => onShare(card.id)} 
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-slate-900 text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/50 border border-slate-800 hover:border-emerald-900/50 transition-colors text-[10px] font-bold uppercase tracking-wider"
+                title="Enviar a WhatsApp"
               >
-                <Download size={isCompact ? 14 : 16} />
+                <MessageCircle size={14} />
+                {!isCompact && <span>Enviar</span>}
               </button>
-              <button 
-                onClick={() => onDelete(card.id)} 
-                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-950/50 transition-colors"
-                title="Eliminar"
-              >
-                <Trash2 size={isCompact ? 14 : 16} />
-              </button>
-            </div>
-          )}
-        </div>
+            )}
+            <button 
+              onClick={() => onDownload(card.id)} 
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-slate-900 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/50 border border-slate-800 hover:border-cyan-900/50 transition-colors text-[10px] font-bold uppercase tracking-wider"
+              title="Descargar Imagen"
+            >
+              <Download size={14} />
+              {!isCompact && <span>Guardar</span>}
+            </button>
+            <button 
+              onClick={() => onDelete(card.id)} 
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-slate-900 text-slate-400 hover:text-rose-400 hover:bg-rose-950/50 border border-slate-800 hover:border-rose-900/50 transition-colors text-[10px] font-bold uppercase tracking-wider"
+              title="Eliminar"
+            >
+              <Trash2 size={14} />
+              {!isCompact && <span>Borrar</span>}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main Content Area */}
