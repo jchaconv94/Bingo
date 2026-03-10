@@ -162,42 +162,49 @@ const ParticipantsPanel: React.FC<Props> = ({
       <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-3 shadow-xl backdrop-blur-sm flex flex-col h-full">
         <div className="flex flex-col gap-3 mb-3 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 w-full justify-between">
-              <h2 className="text-sm 2xl:text-[20px] font-bold text-white flex items-center gap-2">
-                <Users className="text-emerald-500 w-[18px] h-[18px] 2xl:w-6 2xl:h-6" />
-                Participantes
-                <span className="text-[10px] font-medium text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded-full border border-slate-700">
-                  {participants.length}
-                </span>
-                {totalCards > 0 && (
-                  <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full border border-emerald-800/50 ml-1">
-                    <Ticket size={10} /> {totalCards}
-                  </span>
-                )}
-              </h2>
+            <div className="flex items-center gap-2 w-full justify-between pr-1">
+              <div className="flex items-center gap-3">
+                <h2 className="text-sm 2xl:text-[20px] font-bold text-white flex items-center gap-2">
+                  <Users className="text-emerald-500 w-[18px] h-[18px] 2xl:w-6 2xl:h-6" />
+                  Participantes
+                </h2>
+                
+                <div className="flex flex-col bg-slate-800/80 border border-slate-700 rounded-md px-2 py-1 gap-1 min-w-[3rem]">
+                  <div className="flex items-center justify-between gap-2">
+                    <Users size={10} className="text-slate-400" />
+                    <span className="text-[10px] font-bold text-white leading-none">{participants.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <Ticket size={10} className="text-emerald-400" />
+                    <span className="text-[10px] font-bold text-emerald-400 leading-none">{totalCards}</span>
+                  </div>
+                </div>
+              </div>
               
-              <div className="flex gap-1">
+              <div className="flex gap-2">
                 <button
                   onClick={toggleGlobalCards}
-                  className={`p-1 rounded transition-colors border border-slate-700 ${showCardsGlobal ? 'bg-slate-800 text-slate-400 hover:text-cyan-400' : 'bg-cyan-900/30 text-cyan-400 border-cyan-800'}`}
+                  className={`p-2 rounded-lg transition-colors border border-slate-700 ${showCardsGlobal ? 'bg-slate-800 text-slate-400 hover:text-cyan-400' : 'bg-cyan-900/30 text-cyan-400 border-cyan-800'}`}
                   title={showCardsGlobal ? "Ocultar TODOS los cartones" : "Mostrar TODOS los cartones"}
                 >
-                  <CreditCard size={14} />
+                  <CreditCard size={18} />
                 </button>
                 <button
                   onClick={() => setHideParticipants(!hideParticipants)}
-                  className={`p-1 rounded transition-colors border border-slate-700 ${hideParticipants ? 'bg-cyan-900/30 text-cyan-400 border-cyan-800' : 'bg-slate-800 text-slate-400 hover:text-cyan-400'}`}
+                  className={`p-2 rounded-lg transition-colors border border-slate-700 ${hideParticipants ? 'bg-cyan-900/30 text-cyan-400 border-cyan-800' : 'bg-slate-800 text-slate-400 hover:text-cyan-400'}`}
                   title={hideParticipants ? "Mostrar nombres" : "Ocultar nombres (Privacidad)"}
                 >
-                  {hideParticipants ? <EyeOff size={14} /> : <Eye size={14} />}
+                  {hideParticipants ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
-                <button
-                  onClick={onDeleteAllParticipants}
-                  className="p-1 rounded transition-colors border border-slate-700 bg-slate-800 text-slate-400 hover:bg-rose-950/50 hover:text-rose-400 hover:border-rose-800/50"
-                  title="Eliminar TODOS los participantes"
-                >
-                  <Trash2 size={14} />
-                </button>
+                {participants.length > 0 && (
+                  <button
+                    onClick={onDeleteAllParticipants}
+                    className="p-2 rounded-lg transition-colors border border-slate-700 bg-slate-800 text-slate-400 hover:bg-rose-950/50 hover:text-rose-400 hover:border-rose-800/50"
+                    title="Eliminar TODOS los participantes"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -275,13 +282,13 @@ const ParticipantsPanel: React.FC<Props> = ({
           )}
 
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
             <input
               type="text"
               placeholder="Buscar..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:ring-1 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white focus:ring-1 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
             />
           </div>
         </div>
@@ -299,7 +306,7 @@ const ParticipantsPanel: React.FC<Props> = ({
               >
                 <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-slate-700 to-slate-800 group-hover:from-cyan-500 group-hover:to-blue-600 transition-colors duration-300"></div>
 
-                <div className="p-3 pl-5 flex flex-col sm:flex-row items-start sm:items-center gap-3 relative">
+                <div className="p-3 pl-5 flex items-center gap-3 relative">
                   
                   <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-md border border-slate-800 shadow-inner">
                      <Ticket size={12} className="text-emerald-500" />
@@ -399,7 +406,7 @@ const ParticipantsPanel: React.FC<Props> = ({
                        {p.phone && p.cards.length > 1 && (
                           <button 
                             onClick={() => onShareAllCards && onShareAllCards(p)}
-                            className="p-3 text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/30 rounded-lg transition-colors border border-slate-700"
+                            className="p-2.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/30 rounded-lg transition-colors border border-slate-700"
                             title="Compartir Todo"
                           >
                             <FileText size={18} />
@@ -408,7 +415,7 @@ const ParticipantsPanel: React.FC<Props> = ({
 
                        <button 
                         onClick={() => setViewingParticipantId(p.id)}
-                        className="p-3 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/30 rounded-lg transition-colors border border-slate-700"
+                        className="p-2.5 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/30 rounded-lg transition-colors border border-slate-700"
                         title="Ver Detalles"
                       >
                         <ScanEye size={18} />
@@ -422,7 +429,7 @@ const ParticipantsPanel: React.FC<Props> = ({
                             const menu = e.currentTarget.nextElementSibling;
                             if (menu) menu.classList.toggle('hidden');
                           }}
-                          className="p-3 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors border border-slate-700"
+                          className="p-2.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors border border-slate-700"
                           title="Opciones"
                         >
                           <MoreVertical size={18} />
