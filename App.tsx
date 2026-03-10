@@ -14,7 +14,7 @@ import PrizesPanel from './components/PrizesPanel.tsx';
 import EditTitleModal from './components/EditTitleModal.tsx';
 import ConnectionModal from './components/ConnectionModal.tsx';
 import Login from './components/Login.tsx';
-import { Maximize2, Minimize2, PanelLeftOpen, Edit, FileText, Image as ImageIcon, Cloud, RefreshCw, Loader2, Link, Zap, LogOut, Menu, X } from 'lucide-react';
+import { Maximize2, Minimize2, PanelLeftOpen, Edit, FileText, Image as ImageIcon, Cloud, RefreshCw, Loader2, Link, Zap, LogOut, Menu, X, MessageCircle } from 'lucide-react';
 import { useAlert, AlertAction } from './contexts/AlertContext.tsx';
 
 // LocalStorage Keys
@@ -351,12 +351,24 @@ const App: React.FC = () => {
         icon: <FileText size={18} />,
         className: 'bg-slate-800 hover:bg-emerald-900/50 text-emerald-400 border-emerald-800'
       });
+      successActions.push({
+        label: 'Compartir por WhatsApp',
+        onClick: () => shareOrOpenWhatsApp(newParticipant, singleCard.id),
+        icon: <MessageCircle size={18} />,
+        className: 'bg-emerald-900 hover:bg-emerald-800 text-emerald-400 border-emerald-800'
+      });
     } else {
       successActions.push({
         label: 'PDF con todos los cartones',
         onClick: () => generateBingoCardsPDF(newParticipant, bingoTitle, bingoSubtitle),
         icon: <FileText size={18} />,
         className: 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg'
+      });
+      successActions.push({
+        label: 'Compartir todos por WhatsApp',
+        onClick: () => shareOrOpenWhatsApp(newParticipant),
+        icon: <MessageCircle size={18} />,
+        className: 'bg-emerald-900 hover:bg-emerald-800 text-emerald-400 border-emerald-800'
       });
     }
 
@@ -868,6 +880,39 @@ const App: React.FC = () => {
       await generateBingoCardsPDF(p, bingoTitle, bingoSubtitle, cid);
       const url = `https://web.whatsapp.com/send?phone=${p.phone.replace(/\D/g, '')}&text=${encodeURIComponent(`Hola ${p.name}, este es tu cartón #${card.id}, para jugar en Bingo Virtual,\nBuena suerte! 🍀`)}`;
       window.open(url);
+    }
+  };
+
+  const shareOrOpenWhatsApp = async (p: Participant, cardId?: string) => {
+    if (!p.phone) {
+      showAlert({ title: 'Sin teléfono', message: 'El participante no tiene un número de teléfono registrado.', type: 'warning' });
+      return;
+    }
+
+    const card = cardId ? p.cards.find(c => c.id === cardId) : p.cards[0];
+    if (!card) return;
+
+    // Generate the PDF first
+    await generateBingoCardsPDF(p, bingoTitle, bingoSubtitle, cardId);
+
+    const message = `Hola ${p.name}, este es tu cartón #${card.id}, para jugar en Bingo Virtual,\nBuena suerte! 🍀`;
+    const phone = p.phone.replace(/\D/g, '');
+    
+    // Check for Web Share API (Mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Tu Cartón de Bingo',
+          text: message,
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+        // Fallback to WhatsApp Web
+        window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`);
+      }
+    } else {
+      // Desktop / Fallback
+      window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`);
     }
   };
 
