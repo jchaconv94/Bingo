@@ -743,8 +743,9 @@ const App: React.FC = () => {
   const handleReset = async () => {
     const pendingPrizesCount = prizes.filter(p => !p.isAwarded).length;
     const totalPrizes = prizes.length;
+    const hasDrawnBalls = gameState.drawnBalls.length > 0;
 
-    if (totalPrizes > 0 && pendingPrizesCount > 0) {
+    if ((totalPrizes > 0 && pendingPrizesCount > 0) || hasDrawnBalls) {
       const confirmed = await showConfirm({
         title: '¿Siguiente Ronda?',
         message: "Se borrarán las bolillas. Ganadores se mantienen.\n¿Siguiente premio?",

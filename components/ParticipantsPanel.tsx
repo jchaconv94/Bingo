@@ -299,7 +299,7 @@ const ParticipantsPanel: React.FC<Props> = ({
               >
                 <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-slate-700 to-slate-800 group-hover:from-cyan-500 group-hover:to-blue-600 transition-colors duration-300"></div>
 
-                <div className="p-3 pl-5 flex items-start gap-3 relative">
+                <div className="p-3 pl-5 flex flex-col sm:flex-row items-start sm:items-center gap-3 relative">
                   
                   <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-md border border-slate-800 shadow-inner">
                      <Ticket size={12} className="text-emerald-500" />
@@ -382,56 +382,68 @@ const ParticipantsPanel: React.FC<Props> = ({
                     <button 
                       onClick={() => toggleIndividualCard(p.id)}
                       className={`
-                        flex-1 text-[10px] font-medium px-2 py-1.5 rounded transition-all flex items-center justify-center gap-1
+                        p-2 rounded-lg transition-all flex items-center justify-center gap-1 border
                         ${isExpanded 
-                          ? 'text-cyan-400 bg-cyan-950/20 border border-cyan-900/30' 
-                          : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'
+                          ? 'text-cyan-400 bg-cyan-950/20 border-cyan-900/30' 
+                          : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300 border-slate-700'
                         }
                       `}
                       title={isExpanded ? "Ocultar cartones" : "Ver cartones"}
                     >
-                      {isExpanded ? "Ocultar" : "Ver Cartones"}
-                      {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </button>
 
                     <div className="h-4 w-px bg-slate-800 mx-1"></div>
 
-                    <div className="flex items-center gap-1">
-                       {p.phone && p.cards.length > 0 && (
+                    <div className="flex items-center gap-2">
+                       {p.phone && p.cards.length > 1 && (
                           <button 
                             onClick={() => onShareAllCards && onShareAllCards(p)}
-                            className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/30 rounded-md transition-colors"
+                            className="p-3 text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/30 rounded-lg transition-colors border border-slate-700"
                             title="Compartir Todo"
                           >
-                            <FileText size={14} />
+                            <FileText size={18} />
                           </button>
                        )}
 
                        <button 
                         onClick={() => setViewingParticipantId(p.id)}
-                        className="p-1.5 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/30 rounded-md transition-colors"
+                        className="p-3 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/30 rounded-lg transition-colors border border-slate-700"
                         title="Ver Detalles"
                       >
-                        <ScanEye size={14} />
+                        <ScanEye size={18} />
                       </button>
 
-                      <button 
-                        onClick={() => startEdit(p)}
-                        className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-amber-950/30 rounded-md transition-colors"
-                        title="Editar"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      
-                      <button 
-                        onClick={() => onDeleteParticipant(p.id)}
-                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-md transition-colors"
-                        title="Eliminar"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {/* Dropdown for Edit and Delete */}
+                      <div className="relative">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const menu = e.currentTarget.nextElementSibling;
+                            if (menu) menu.classList.toggle('hidden');
+                          }}
+                          className="p-3 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors border border-slate-700"
+                          title="Opciones"
+                        >
+                          <MoreVertical size={18} />
+                        </button>
+                        <div className="absolute right-0 top-full mt-2 w-32 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-20 hidden">
+                          <button 
+                            onClick={() => startEdit(p)}
+                            className="w-full text-left px-4 py-2 text-xs text-amber-400 hover:bg-amber-950/30 flex items-center gap-2"
+                          >
+                            <Edit2 size={14} /> Editar
+                          </button>
+                          <button 
+                            onClick={() => onDeleteParticipant(p.id)}
+                            className="w-full text-left px-4 py-2 text-xs text-rose-400 hover:bg-rose-950/30 flex items-center gap-2"
+                          >
+                            <Trash2 size={14} /> Eliminar
+                          </button>
+                        </div>
+                      </div>
 
-                      <div className="w-px h-4 bg-slate-800 mx-1"></div>
+                      <div className="w-px h-8 bg-slate-800 mx-1"></div>
 
                       <button 
                         onClick={async () => {
@@ -445,11 +457,11 @@ const ParticipantsPanel: React.FC<Props> = ({
                               onAddCard(p.id);
                            }
                         }}
-                        className="flex items-center gap-1 pl-1.5 pr-2 py-1 rounded bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-500 hover:text-emerald-400 border border-emerald-500/20 transition-all shadow-sm"
+                        className="flex items-center gap-2 px-4 py-3 rounded-lg bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-500 hover:text-emerald-400 border border-emerald-500/20 transition-all shadow-sm"
                         title="Agregar cartón extra"
                       >
-                        <Ticket size={12} /> 
-                        <span className="text-[10px] font-bold">+1</span>
+                        <Ticket size={18} /> 
+                        <span className="text-xs font-bold">+1</span>
                       </button>
                     </div>
                   </div>
