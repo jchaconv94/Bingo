@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UserPlus, Upload, FileSpreadsheet, Archive, Save, Ticket, User, Hash, Phone, ChevronRight, RefreshCw } from 'lucide-react';
+import { UserPlus, Upload, FileSpreadsheet, Archive, Save, Ticket, User, Hash, Phone, ChevronRight, RefreshCw, Minus, Plus } from 'lucide-react';
 import { Participant } from '../types.ts';
 
 interface Props {
@@ -23,7 +23,7 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, on
     surname: '',
     dni: generateRandomDNI(), // Inicializar con un ID generado
     phone: '',
-    cardsCount: 1
+    cardsCount: '1' as string | number
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,7 +43,7 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, on
     e.preventDefault();
     if (!formData.name || !formData.dni) return;
 
-    const count = Math.max(1, Math.floor(formData.cardsCount));
+    const count = Math.max(1, Math.floor(Number(formData.cardsCount) || 1));
 
     onRegister(
       {
@@ -60,7 +60,7 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, on
       surname: '',
       dni: generateRandomDNI(), // Generar nuevo ID para el siguiente usuario
       phone: '',
-      cardsCount: 1
+      cardsCount: '1'
     });
 
     // Regresar el foco al primer input (Nombre)
@@ -184,24 +184,54 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, on
         </div>
 
         {/* Cards Count Section */}
-        <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/50 flex items-center gap-4 hover:border-emerald-500/30 transition-colors">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20 shadow-lg shadow-emerald-900/10">
-            <Ticket size={24} />
+        <div className="bg-slate-800/30 rounded-2xl p-4 border border-slate-700/50 flex flex-col gap-3 hover:border-emerald-500/30 transition-colors">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                <Ticket size={16} />
+              </div>
+              <label className="text-xs uppercase font-bold text-slate-400 tracking-wide">Cantidad de Cartones</label>
+            </div>
+            <div className="text-[10px] font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded-md border border-slate-800">UNIDADES</div>
           </div>
-          <div className="flex-1">
-            <label className="block text-[10px] uppercase font-bold text-slate-400 mb-0.5 tracking-wide">Cantidad de Cartones</label>
+          
+          <div className="flex items-center justify-between gap-4 bg-slate-950 p-2 rounded-xl border border-slate-800 shadow-inner">
+            <button
+              type="button"
+              onClick={() => {
+                const current = Number(formData.cardsCount) || 0;
+                setFormData({ ...formData, cardsCount: current > 1 ? current - 1 : 1 });
+              }}
+              className="w-14 h-14 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-95 shadow-sm"
+            >
+              <Minus size={24} />
+            </button>
+            
             <input
               type="number"
               min="1"
               max="100"
               required
               value={formData.cardsCount}
-              onChange={e => setFormData({ ...formData, cardsCount: Number(e.target.value) })}
-              className="w-full bg-transparent text-white font-black text-2xl border-none focus:ring-0 p-0 h-auto placeholder-slate-600"
+              onChange={e => {
+                const val = e.target.value;
+                setFormData({ ...formData, cardsCount: val === '' ? '' : Number(val) });
+              }}
+              className="flex-1 bg-transparent text-white font-black text-4xl text-center border-none focus:ring-0 p-0 h-auto placeholder-slate-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               placeholder="1"
             />
+
+            <button
+              type="button"
+              onClick={() => {
+                const current = Number(formData.cardsCount) || 0;
+                setFormData({ ...formData, cardsCount: current + 1 });
+              }}
+              className="w-14 h-14 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/40 flex items-center justify-center text-emerald-500 hover:text-emerald-400 transition-all active:scale-95 shadow-sm"
+            >
+              <Plus size={24} />
+            </button>
           </div>
-          <div className="text-[11px] font-bold text-slate-500 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">UNIDADES</div>
         </div>
 
         <button
