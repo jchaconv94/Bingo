@@ -194,8 +194,9 @@ const App: React.FC = () => {
     if (!silent) setIsSyncing(true);
 
     try {
-      const cloudData = await SheetAPI.fetchAll(sheetUrl);
-      if (cloudData) {
+      const result = await SheetAPI.fetchAll(sheetUrl);
+      if (result.success && Array.isArray(result.data)) {
+        const cloudData = result.data;
         // Invertimos el orden para que los nuevos (al final del sheet) aparezcan primero
         const reversedData = [...cloudData].reverse();
 
@@ -221,9 +222,17 @@ const App: React.FC = () => {
           }
           return prev;
         });
+      } else {
+        console.error("Error al cargar datos:", result.message || result.error);
+        if (!silent) {
+          showAlert({ title: 'Error de Conexión', message: `No se pudieron cargar los datos: ${result.message || result.error}`, type: 'danger' });
+        }
       }
     } catch (error) {
-      console.error("Error polling:", error);
+      console.error("Error inesperado en loadFromCloud:", error);
+      if (!silent) {
+        showAlert({ title: 'Error Inesperado', message: 'Ocurrió un error al intentar conectar con la hoja de cálculo.', type: 'danger' });
+      }
     } finally {
       if (silent) isPollingRef.current = false;
       if (!silent) setIsSyncing(false);
@@ -337,40 +346,17 @@ const App: React.FC = () => {
     syncToCloud('save', newParticipant);
 
     const successActions: AlertAction[] = [];
-    if (cardsCount === 1) {
-      const singleCard = newParticipant.cards[0];
-      successActions.push({
-        label: 'Descargar PNG',
-        onClick: () => downloadCardImage(newParticipant, singleCard, bingoTitle, bingoSubtitle),
-        icon: <ImageIcon size={18} />,
-        className: 'bg-slate-800 hover:bg-cyan-900/50 text-cyan-400 border-cyan-800'
-      });
-      successActions.push({
-        label: 'Descargar PDF',
-        onClick: () => generateBingoCardsPDF(newParticipant, bingoTitle, bingoSubtitle, singleCard.id),
-        icon: <FileText size={18} />,
-        className: 'bg-slate-800 hover:bg-emerald-900/50 text-emerald-400 border-emerald-800'
-      });
-      successActions.push({
-        label: 'Compartir por WhatsApp',
-        onClick: () => shareOrOpenWhatsApp(newParticipant, singleCard.id),
-        icon: <MessageCircle size={18} />,
-        className: 'bg-emerald-900 hover:bg-emerald-800 text-emerald-400 border-emerald-800'
-      });
-    } else {
-      successActions.push({
-        label: 'PDF con todos los cartones',
-        onClick: () => generateBingoCardsPDF(newParticipant, bingoTitle, bingoSubtitle),
-        icon: <FileText size={18} />,
-        className: 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg'
-      });
-      successActions.push({
-        label: 'Compartir todos por WhatsApp',
-        onClick: () => shareOrOpenWhatsApp(newParticipant),
-        icon: <MessageCircle size={18} />,
-        className: 'bg-emerald-900 hover:bg-emerald-800 text-emerald-400 border-emerald-800'
-      });
-    }
+    
+    // WhatsApp button (Primary action)
+    successActions.push({
+      label: 'Compartir cartones a WhatsApp',
+      onClick: async () => {
+        // Open WhatsApp (which now handles the correct file download internally)
+        await shareOrOpenWhatsApp(newParticipant, cardsCount === 1 ? newParticipant.cards[0].id : undefined);
+      },
+      icon: <MessageCircle size={20} />,
+      className: 'w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-5 rounded-lg shadow-lg flex items-center justify-center gap-2 border-none'
+    });
 
     showAlert({
       title: 'Registro Exitoso',
@@ -892,35 +878,46 @@ const App: React.FC = () => {
     const card = cardId ? p.cards.find(c => c.id === cardId) : p.cards[0];
     if (!card) return;
 
-    // Generate the PDF first
-    await generateBingoCardsPDF(p, bingoTitle, bingoSubtitle, cardId);
+    // Generate the appropriate file type
+    if (cardId) {
+      await downloadCardImage(p, card, bingoTitle, bingoSubtitle);
+    } else {
+      await generateBingoCardsPDF(p, bingoTitle, bingoSubtitle);
+    }
 
-    const message = `Hola ${p.name}, este es tu cartón #${card.id}, para jugar en Bingo Virtual,\nBuena suerte! 🍀`;
+    // Customize message based on card count
+    let message = '';
+    if (p.cards.length === 1) {
+      message = `Hola ${p.name}, este es tu cartón #${p.cards[0].id}, para jugar en Bingo Virtual. ¡Buena suerte!`;
+    } else {
+      const cardIds = p.cards.map(c => `#${c.id}`).join(', ');
+      message = `Hola ${p.name}, estos son tus ${p.cards.length} cartones: ${cardIds}, para jugar en Bingo Virtual. ¡Buena suerte!`;
+    }
+    
     const phone = p.phone.replace(/\D/g, '');
     
-    // Check for Web Share API (Mobile)
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Tu Cartón de Bingo',
-          text: message,
-        });
-      } catch (err) {
-        console.error('Error sharing:', err);
-        // Fallback to WhatsApp Web
-        window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`);
-      }
-    } else {
-      // Desktop / Fallback
-      window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`);
-    }
+    // Use wa.me API which automatically detects mobile app or desktop browser
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    
+    // Open in a new tab/window
+    window.open(url, '_blank');
   };
 
   const handleShareAllCards = async (p: Participant) => {
-    if (!p.phone) return;
+    if (!p.phone) {
+      showAlert({ title: 'Sin teléfono', message: 'El participante no tiene un número de teléfono registrado.', type: 'warning' });
+      return;
+    }
+    
     await generateBingoCardsPDF(p, bingoTitle, bingoSubtitle);
-    const url = `https://web.whatsapp.com/send?phone=${p.phone.replace(/\D/g, '')}&text=${encodeURIComponent(`Hola ${p.name}, adjuntamos tus cartones para jugar en Bingo Virtual,\nBuena suerte! 🍀`)}`;
-    window.open(url);
+    
+    const message = `Hola ${p.name}, adjuntamos tus cartones para jugar en Bingo Virtual,\nBuena suerte! 🍀`;
+    const phone = p.phone.replace(/\D/g, '');
+    
+    // Use wa.me API which automatically detects mobile app or desktop browser
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    
+    window.open(url, '_blank');
   };
 
   const handleAddPrize = (name: string, description: string) => {

@@ -82,19 +82,19 @@ export const SheetAPI = {
     }
   },
 
-  async fetchAll(url: string): Promise<Participant[] | null> {
+  async fetchAll(url: string): Promise<ApiResponse> {
     try {
       const endpoint = `${url}?action=read`;
       const response = await fetch(endpoint);
       const json = await response.json();
       
-      if (json.success && Array.isArray(json.data)) {
-        return json.data as Participant[];
+      if (json.success) {
+        return { success: true, data: json.data as Participant[] };
       }
-      return null;
+      return { success: false, message: json.message || 'Error desconocido' };
     } catch (error) {
       console.error("Fetch Error:", error);
-      return null;
+      return { success: false, error: String(error) };
     }
   }
 };
