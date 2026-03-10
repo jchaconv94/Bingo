@@ -210,7 +210,8 @@ const App: React.FC = () => {
         // Actualizar secuencia de cartones basada en lo importado
         let maxSeq = 100;
         reversedData.forEach(p => p.cards.forEach(c => {
-          const num = parseInt(c.id.replace(/\D/g, ''));
+          // Extraer solo la parte numérica antes del guion (ej: C0298-A1B -> 0298)
+          const num = parseInt(c.id.split('-')[0].replace(/\D/g, ''));
           if (!isNaN(num) && num > maxSeq) maxSeq = num;
         }));
 
@@ -319,8 +320,10 @@ const App: React.FC = () => {
     let currentSeq = gameState.lastCardSequence;
     for (let i = 0; i < cardsCount; i++) {
       currentSeq++;
+      // Añadimos un sufijo aleatorio de 4 caracteres para evitar duplicados en registros concurrentes
+      const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
       newParticipant.cards.push({
-        id: `C${currentSeq.toString().padStart(4, '0')}`,
+        id: `C${currentSeq.toString().padStart(4, '0')}-${randomSuffix}`,
         numbers: generateBingoCardNumbers()
       });
     }
@@ -457,7 +460,9 @@ const App: React.FC = () => {
 
   const handleAddCard = async (participantId: string) => {
     const newSeq = gameState.lastCardSequence + 1;
-    const newCardId = `C${newSeq.toString().padStart(4, '0')}`;
+    // Añadimos un sufijo aleatorio de 4 caracteres para evitar duplicados en registros concurrentes
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const newCardId = `C${newSeq.toString().padStart(4, '0')}-${randomSuffix}`;
     const currentParticipant = participants.find(p => p.id === participantId);
 
     if (!currentParticipant) return;
@@ -827,7 +832,8 @@ const App: React.FC = () => {
 
         let maxSeq = gameState.lastCardSequence;
         normalizedParticipants.forEach(p => p.cards.forEach(c => {
-          const num = parseInt(c.id.replace(/\D/g, ''));
+          // Extraer solo la parte numérica antes del guion (ej: C0298-A1B -> 0298)
+          const num = parseInt(c.id.split('-')[0].replace(/\D/g, ''));
           if (!isNaN(num) && num > maxSeq) maxSeq = num;
         }));
         setGameState(prev => ({ ...prev, lastCardSequence: maxSeq }));
