@@ -1,15 +1,13 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { UserPlus, Upload, FileSpreadsheet, Archive, Save, Ticket, User, Hash, Phone, ChevronRight, RefreshCw, Minus, Plus } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { UserPlus, Hash, Phone, ChevronRight, RefreshCw, Minus, Plus, Ticket, User, Save, X } from 'lucide-react';
 import { Participant } from '../types.ts';
 
 interface Props {
   onRegister: (data: Omit<Participant, 'id' | 'cards'>, cardsCount: number) => void;
-  onImport: (file: File) => void;
-  onExport: () => void;
-  onGenerateAllImages: () => void;
   totalParticipants: number;
   totalCards: number;
+  onClose: () => void;
 }
 
 // Función auxiliar para generar ID numérico de 8 dígitos
@@ -17,7 +15,7 @@ const generateRandomDNI = () => {
   return Math.floor(10000000 + Math.random() * 90000000).toString();
 };
 
-const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, onGenerateAllImages, totalParticipants, totalCards }) => {
+const RegistrationPanel: React.FC<Props> = ({ onRegister, totalParticipants, totalCards, onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
     surname: '',
@@ -70,41 +68,39 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, on
   };
 
   return (
-    // Expanded Design: p-6 instead of p-4, gap-5 instead of gap-4
-    <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-2xl backdrop-blur-md flex flex-col gap-5 relative overflow-hidden group shrink-0">
+    <div className="p-4 flex flex-col gap-3 relative overflow-hidden group shrink-0 h-full max-h-[90vh]">
 
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-40 h-40 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
 
-      {/* Header Expanded */}
-      <div className="flex items-center justify-between relative z-10 pb-4 border-b border-slate-800/60">
-        <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-3">
-            <div className="p-2.5 bg-cyan-500/10 rounded-xl border border-cyan-500/20 text-cyan-400 shadow-lg shadow-cyan-900/10">
-              <UserPlus size={22} />
-            </div>
-            Nuevo Jugador
-          </h2>
-        </div>
-        <div className="flex flex-col items-end">
-          <span className="text-[10px] font-bold uppercase text-slate-500 mb-1 tracking-wider">Estadísticas</span>
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col items-end">
-              <span className="text-[9px] text-slate-400">Jugadores</span>
-              <span className="text-lg font-black text-white leading-none">{totalParticipants}</span>
-            </div>
-            <div className="w-px h-8 bg-slate-700/50"></div>
-            <div className="flex flex-col items-end">
-              <span className="text-[9px] text-emerald-500 font-bold">Cartones</span>
-              <span className="text-lg font-black text-emerald-400 leading-none">{totalCards}</span>
-            </div>
+      {/* Header - Simplified */}
+      <div className="flex items-center justify-between relative z-10 shrink-0">
+        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <div className="p-2 bg-cyan-500/10 rounded-lg border border-cyan-500/20 text-cyan-400">
+            <UserPlus size={18} />
           </div>
+          Nuevo Jugador
+        </h2>
+        <button onClick={onClose} className="p-2 bg-slate-800/80 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors border border-slate-700/50 shadow-sm">
+          <X size={18} />
+        </button>
+      </div>
+
+      {/* Stats - Compact */}
+      <div className="flex items-center justify-between bg-slate-800/30 p-3 rounded-xl border border-slate-700/30 relative z-10 shrink-0">
+        <div className="flex flex-col">
+          <span className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Jugadores</span>
+          <span className="text-lg font-black text-white leading-none">{totalParticipants}</span>
+        </div>
+        <div className="w-px h-8 bg-slate-700/50"></div>
+        <div className="flex flex-col items-end">
+          <span className="text-[9px] font-bold uppercase text-emerald-500 tracking-wider">Cartones</span>
+          <span className="text-lg font-black text-emerald-400 leading-none">{totalCards}</span>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
-        <div className="space-y-4">
-
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 relative z-10">
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-4">
           {/* Nombre */}
           <div className="relative group/input">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-cyan-400 transition-colors">
@@ -116,8 +112,7 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, on
               required
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
-              // Expanded Inputs: py-3.5 instead of py-3
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-3.5 text-base text-white placeholder-slate-600 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 outline-none transition-all shadow-sm"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-4 text-base text-white placeholder-slate-600 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 outline-none transition-all shadow-sm"
               placeholder="Nombres del participante"
             />
           </div>
@@ -131,13 +126,13 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, on
               type="text"
               value={formData.surname}
               onChange={e => setFormData({ ...formData, surname: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-3.5 text-base text-white placeholder-slate-600 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 outline-none transition-all shadow-sm"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-4 text-base text-white placeholder-slate-600 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 outline-none transition-all shadow-sm"
               placeholder="Apellidos"
             />
           </div>
 
-          {/* Grid Responsive: 1 Col on mobile, 2 cols on larger */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Grid Responsive */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Phone */}
             <div className="relative group/input">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-cyan-400 transition-colors">
@@ -147,8 +142,8 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, on
                 type="tel"
                 value={formData.phone}
                 onChange={handlePhoneChange}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-3 py-3.5 text-sm text-white placeholder-slate-600 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 outline-none transition-all shadow-sm font-mono"
-                placeholder="9 Digitos"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-4 text-base text-white placeholder-slate-600 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 outline-none transition-all shadow-sm font-mono"
+                placeholder="Teléfono"
                 maxLength={9}
               />
             </div>
@@ -161,132 +156,87 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, onImport, onExport, on
                 type="text"
                 required
                 value={formData.dni}
-                onChange={e => {
-                  // Permitir edición manual pero restringir a números y 8 dígitos
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 8);
-                  setFormData({ ...formData, dni: val });
-                }}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-10 py-3.5 text-sm text-white placeholder-slate-600 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 outline-none transition-all shadow-sm font-mono tracking-widest"
-                placeholder="ID AUTO"
+                onChange={e => setFormData({ ...formData, dni: e.target.value.replace(/\D/g, '').slice(0, 8) })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-12 py-4 text-base text-white placeholder-slate-600 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 outline-none transition-all shadow-sm font-mono tracking-widest font-bold"
+                placeholder="DNI / ID"
               />
               <button
                 type="button"
                 onClick={regenerateDNI}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 transition-colors p-1 rounded-md hover:bg-slate-800"
-                title="Generar nuevo ID aleatorio"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 transition-colors p-1"
+                title="Generar nuevo ID"
               >
-                <RefreshCw size={14} />
+                <RefreshCw size={18} />
               </button>
             </div>
-
-
           </div>
-        </div>
 
-        {/* Cards Count Section */}
-        <div className="bg-slate-800/30 rounded-2xl p-4 border border-slate-700/50 flex flex-col gap-3 hover:border-emerald-500/30 transition-colors">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
-                <Ticket size={16} />
-              </div>
-              <label className="text-xs uppercase font-bold text-slate-400 tracking-wide">Cantidad de Cartones</label>
-            </div>
-            <div className="text-[10px] font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded-md border border-slate-800">UNIDADES</div>
-          </div>
-          
-          <div className="flex items-center justify-between gap-4 bg-slate-950 p-2 rounded-xl border border-slate-800 shadow-inner">
-            <button
-              type="button"
-              onClick={() => {
-                const current = Number(formData.cardsCount) || 0;
-                setFormData({ ...formData, cardsCount: current > 1 ? current - 1 : 1 });
-              }}
-              className="w-14 h-14 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-95 shadow-sm"
-            >
-              <Minus size={24} />
-            </button>
+          {/* Cards Count Section - Premium Redesign */}
+          <div className="bg-slate-900/40 rounded-3xl p-5 border border-slate-800/50 backdrop-blur-sm relative overflow-hidden group/cards">
+            {/* Subtle background glow */}
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl group-hover/cards:bg-emerald-500/10 transition-colors duration-500"></div>
             
-            <input
-              type="number"
-              min="1"
-              max="100"
-              required
-              value={formData.cardsCount}
-              onChange={e => {
-                const val = e.target.value;
-                setFormData({ ...formData, cardsCount: val === '' ? '' : Number(val) });
-              }}
-              className="flex-1 bg-transparent text-white font-black text-4xl text-center border-none focus:ring-0 p-0 h-auto placeholder-slate-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              placeholder="1"
-            />
+            <div className="flex items-center justify-between mb-4 relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                  <Ticket size={24} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em] leading-none mb-1">Volumen de</span>
+                  <span className="text-base uppercase font-black text-white tracking-wider leading-none">Cartones</span>
+                </div>
+              </div>
+              <div className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+                Unidades
+              </div>
+            </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                const current = Number(formData.cardsCount) || 0;
-                setFormData({ ...formData, cardsCount: current + 1 });
-              }}
-              className="w-14 h-14 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/40 flex items-center justify-center text-emerald-500 hover:text-emerald-400 transition-all active:scale-95 shadow-sm"
-            >
-              <Plus size={24} />
-            </button>
+            <div className="flex items-center justify-between bg-slate-950/50 rounded-2xl p-2 border border-slate-800/50 relative z-10">
+              <button
+                type="button"
+                onClick={() => setFormData({...formData, cardsCount: Math.max(1, Number(formData.cardsCount) - 1)})}
+                className="w-14 h-14 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-slate-500 hover:text-white transition-all active:scale-90 shadow-lg"
+              >
+                <Minus size={20} />
+              </button>
+              
+              <div className="flex-1 flex flex-col items-center justify-center">
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  required
+                  value={formData.cardsCount}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setFormData({ ...formData, cardsCount: val === '' ? '' : Number(val) });
+                  }}
+                  className="w-full bg-transparent text-4xl font-black text-white text-center border-none focus:ring-0 p-0 h-auto placeholder-slate-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]"
+                  placeholder="1"
+                />
+                <div className="w-8 h-1 bg-emerald-500/30 rounded-full mt-1"></div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setFormData({...formData, cardsCount: Number(formData.cardsCount) + 1})}
+                className="w-14 h-14 rounded-xl bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/20 flex items-center justify-center text-emerald-500 hover:text-emerald-400 transition-all active:scale-90 shadow-lg"
+              >
+                <Plus size={20} />
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* Fixed Button */}
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-lg py-4 rounded-xl transition-all shadow-lg shadow-cyan-900/30 flex items-center justify-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0 mt-2"
+          className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-cyan-900/40 flex items-center justify-center gap-2 mt-4 shrink-0 uppercase tracking-widest text-sm"
         >
           <Save size={20} />
-          REGISTRAR
-          <ChevronRight size={20} className="opacity-50" />
+          Registrar Jugador
         </button>
       </form>
-
-      <div className="mt-auto pt-4 border-t border-slate-800/60 grid grid-cols-3 gap-3">
-
-        <input
-          type="file"
-          ref={fileInputRef}
-          className="hidden"
-          accept=".xlsx, .xls"
-          onChange={(e) => {
-            if (e.target.files?.[0]) onImport(e.target.files[0]);
-            e.target.value = '';
-          }}
-        />
-
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="flex flex-col items-center justify-center gap-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white text-[11px] font-medium py-3 rounded-xl border border-slate-800 hover:border-slate-600 transition-all group shadow-sm"
-        >
-          <div className="bg-slate-800 group-hover:bg-slate-700 p-2 rounded-lg transition-colors">
-            <Upload size={18} className="text-slate-400 group-hover:text-cyan-400 transition-colors" />
-          </div>
-          <span>Importar</span>
-        </button>
-
-        <button
-          onClick={onExport}
-          className="flex flex-col items-center justify-center gap-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white text-[11px] font-medium py-3 rounded-xl border border-slate-800 hover:border-slate-600 transition-all group shadow-sm"
-        >
-          <div className="bg-slate-800 group-hover:bg-slate-700 p-2 rounded-lg transition-colors">
-            <FileSpreadsheet size={18} className="text-slate-400 group-hover:text-emerald-400 transition-colors" />
-          </div>
-          <span>Exportar</span>
-        </button>
-
-        <button
-          onClick={onGenerateAllImages}
-          className="flex flex-col items-center justify-center gap-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white text-[11px] font-medium py-3 rounded-xl border border-slate-800 hover:border-slate-600 transition-all group shadow-sm"
-        >
-          <div className="bg-slate-800 group-hover:bg-slate-700 p-2 rounded-lg transition-colors">
-            <Archive size={18} className="text-slate-400 group-hover:text-amber-400 transition-colors" />
-          </div>
-          <span>Backup ZIP</span>
-        </button>
-      </div>
     </div>
   );
 };

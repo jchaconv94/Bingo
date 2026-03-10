@@ -351,11 +351,11 @@ const GamePanel: React.FC<Props> = ({
         </div>
 
         {/* Zona Central de la Bola */}
-        <div className="relative min-h-[240px] flex items-center justify-center py-2 perspective-1000">
+        <div className="relative min-h-[240px] lg:min-h-[400px] flex items-center justify-center py-2 perspective-1000">
 
           {/* Lista de Premios (Izquierda) */}
           {prizes.length > 0 && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-64 hidden lg:flex flex-col gap-3 max-h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pl-2 pr-3 py-2">
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-64 xl:w-80 hidden lg:flex flex-col gap-3 max-h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pl-2 pr-3 py-2">
               {prizes.map((prize, idx) => {
                 const previousWon = idx === 0 || prizes[idx - 1].isAwarded;
                 const isNext = !prize.isAwarded && previousWon;
@@ -427,12 +427,12 @@ const GamePanel: React.FC<Props> = ({
             {/* La Bolilla 3D */}
             <div className="relative">
               {/* Sombra de suelo */}
-              <div className={`absolute -bottom-4 left-1/2 -translate-x-1/2 w-32 h-8 bg-black/60 rounded-[100%] blur-md transition-all duration-200 ${isAnimating ? 'scale-75 opacity-40' : 'scale-100 opacity-60'}`}></div>
+              <div className={`absolute -bottom-4 left-1/2 -translate-x-1/2 w-32 lg:w-48 h-8 bg-black/60 rounded-[100%] blur-md transition-all duration-200 ${isAnimating ? 'scale-75 opacity-40' : 'scale-100 opacity-60'}`}></div>
 
               {/* Cuerpo de la Esfera */}
               <div
                 className={`
-                   w-48 h-48 sm:w-56 sm:h-56 rounded-full flex items-center justify-center relative
+                   w-48 h-48 sm:w-56 sm:h-56 lg:w-72 lg:h-72 rounded-full flex items-center justify-center relative
                    transition-all duration-150 border-b-4
                    ${isAnimating ? 'animate-bounce' : 'animate-in zoom-in-90 duration-500'}
                    ${ballStyle.border}
@@ -454,7 +454,7 @@ const GamePanel: React.FC<Props> = ({
                   {typeof currentBall === 'number' ? (
                     <span
                       className={`
-                             text-7xl sm:text-[7rem] font-black tracking-tighter leading-none select-none
+                             text-7xl sm:text-[7rem] lg:text-[9rem] font-black tracking-tighter leading-none select-none
                              ${ballStyle.color}
                              ${isAnimating ? 'blur-[4px] scale-75 opacity-50' : 'blur-0 scale-100 opacity-100'}
                              transition-all duration-200
@@ -469,7 +469,7 @@ const GamePanel: React.FC<Props> = ({
                       {currentBall}
                     </span>
                   ) : (
-                    <span className="text-7xl sm:text-[7rem] font-black select-none text-slate-500/30">{currentBall}</span>
+                    <span className="text-7xl sm:text-[7rem] lg:text-[9rem] font-black select-none text-slate-500/30">{currentBall}</span>
                   )}
                 </div>
 
@@ -565,7 +565,7 @@ const GamePanel: React.FC<Props> = ({
                     <div
                       key={num}
                       className={`
-                          flex-1 h-full rounded flex items-center justify-center text-xs sm:text-base font-bold transition-all duration-500 border
+                          flex-1 h-full rounded flex items-center justify-center text-xs sm:text-base lg:text-xl font-bold transition-all duration-500 border
                           ${isLast
                           ? 'bg-amber-500 text-slate-900 border-amber-300 scale-110 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-10'
                           : isDrawn

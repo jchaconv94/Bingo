@@ -13,6 +13,8 @@ import WinnerDetailsModal from './components/WinnerDetailsModal.tsx';
 import PrizesPanel from './components/PrizesPanel.tsx';
 import EditTitleModal from './components/EditTitleModal.tsx';
 import ConnectionModal from './components/ConnectionModal.tsx';
+import ManagementMenu from './components/ManagementMenu.tsx';
+import Modal from './components/Modal.tsx';
 import Login from './components/Login.tsx';
 import { Maximize2, Minimize2, PanelLeftOpen, Edit, FileText, Image as ImageIcon, Cloud, RefreshCw, Loader2, Link, Zap, LogOut, Menu, X, MessageCircle } from 'lucide-react';
 import { useAlert, AlertAction } from './contexts/AlertContext.tsx';
@@ -112,8 +114,9 @@ const App: React.FC = () => {
   } | null>(null);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [showManagementMenu, setShowManagementMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [activeManagementModal, setActiveManagementModal] = useState<'none' | 'register' | 'prizes' | 'participants'>('none');
 
   const totalCards = participants.reduce((acc, p) => acc + p.cards.length, 0);
 
@@ -975,43 +978,74 @@ const App: React.FC = () => {
   // --- MAIN APP ---
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col relative">
-      <div
-        className={`fixed inset-0 bg-black/70 backdrop-blur-[2px] z-[90] transition-opacity duration-300 ${showSidebar ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-        onClick={() => setShowSidebar(false)}
+      <ManagementMenu 
+        isOpen={showManagementMenu}
+        onClose={() => setShowManagementMenu(false)}
+        onOpenModal={(modal) => setActiveManagementModal(modal)}
+        onImport={handleImport}
+        onExport={() => exportToExcel(participants)}
+        onBackup={() => downloadAllCardsZip(participants, bingoTitle, bingoSubtitle)}
+        totalParticipants={participants.length}
+        totalCards={totalCards}
       />
 
-      <aside
-        className={`fixed top-0 left-0 h-full w-full sm:w-[450px] bg-slate-900/95 border-r border-slate-800 shadow-2xl z-[100] transform transition-transform duration-300 ease-out overflow-y-auto custom-scrollbar p-4 flex flex-col gap-6 ${showSidebar ? 'translate-x-0' : '-translate-x-full'}`}
+      <Modal 
+        isOpen={activeManagementModal === 'register'} 
+        onClose={() => setActiveManagementModal('none')}
+        maxWidth="max-w-xl"
+        noPadding
       >
-        <div className="flex justify-between items-center pb-2 border-b border-slate-800/50 flex-shrink-0">
-          <h3 className="font-bold text-white flex items-center gap-2 text-lg">
-            <div className="w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-lg shadow-cyan-500/50"></div>
-            Menú de Gestión
-          </h3>
-          <button onClick={() => setShowSidebar(false)} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
-            <PanelLeftOpen className="rotate-180" size={22} />
-          </button>
-        </div>
+        <RegistrationPanel
+          onRegister={(data, count) => {
+            handleRegister(data, count);
+            setActiveManagementModal('none');
+          }}
+          totalParticipants={participants.length}
+          totalCards={totalCards}
+          onClose={() => setActiveManagementModal('none')}
+        />
+      </Modal>
 
-        <div className="flex-1 flex flex-col gap-6 min-h-0">
-          <RegistrationPanel
-            onRegister={handleRegister}
-            onImport={handleImport}
-            onExport={() => exportToExcel(participants)}
-            onGenerateAllImages={() => downloadAllCardsZip(participants, bingoTitle, bingoSubtitle)}
-            totalParticipants={participants.length}
-            totalCards={totalCards}
-          />
+      <Modal 
+        isOpen={activeManagementModal === 'prizes'} 
+        onClose={() => setActiveManagementModal('none')}
+        maxWidth="max-w-xl"
+        noPadding
+      >
+        <PrizesPanel
+          prizes={prizes}
+          onAddPrize={handleAddPrize}
+          onEditPrize={handleEditPrize}
+          onRemovePrize={handleRemovePrize}
+          onTogglePrize={handleTogglePrize}
+          onClose={() => setActiveManagementModal('none')}
+        />
+      </Modal>
 
-          <PrizesPanel
-            prizes={prizes}
-            onAddPrize={handleAddPrize}
-            onEditPrize={handleEditPrize}
-            onRemovePrize={handleRemovePrize}
-            onTogglePrize={handleTogglePrize}
-          />
-        </div>
-      </aside>
+      <Modal 
+        isOpen={activeManagementModal === 'participants'} 
+        onClose={() => setActiveManagementModal('none')}
+        maxWidth="max-w-4xl"
+        noPadding
+      >
+        <ParticipantsPanel
+          participants={participants}
+          drawnBalls={gameState.drawnBalls}
+          winners={winners}
+          onAddCard={handleAddCard}
+          onDeleteCard={handleDeleteCard}
+          onDownloadCard={handleDownloadCard}
+          onEditParticipant={handleEditParticipant}
+          onDeleteParticipant={handleDeleteParticipant}
+          onDeleteAllParticipants={handleDeleteAllParticipants}
+          currentPattern={gameState.selectedPattern}
+          onShareCard={handleShareCard}
+          onShareAllCards={handleShareAllCards}
+          prizes={prizes}
+          totalCards={totalCards}
+          onClose={() => setActiveManagementModal('none')}
+        />
+      </Modal>
 
       {showTitleModal && (
         <EditTitleModal
@@ -1068,10 +1102,10 @@ const App: React.FC = () => {
       <header className="bg-slate-900 border-b border-slate-800 py-3 px-6 flex items-center justify-between shadow-lg sticky top-0 z-20 h-14">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => setShowSidebar(true)}
+            onClick={() => setShowManagementMenu(true)}
             className={`p-1.5 rounded-lg transition-colors border border-slate-700 bg-slate-800 text-cyan-400 hover:text-white hover:border-cyan-500/50`}
           >
-            <PanelLeftOpen size={20} />
+            <Menu size={20} />
           </button>
 
           <div className="flex flex-col">
@@ -1178,8 +1212,8 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 p-4 max-w-[1920px] mx-auto w-full grid grid-cols-1 gap-4 transition-all duration-300 items-start xl:grid-cols-[1fr_400px] 2xl:grid-cols-[1fr_500px]">
-        <section className="flex flex-col gap-4">
+      <main className="flex-1 p-4 max-w-[1920px] mx-auto w-full flex flex-col items-center justify-center transition-all duration-300">
+        <section className="w-full max-w-[1600px]">
           <GamePanel
             drawnBalls={gameState.drawnBalls}
             onDrawBall={handleDrawBall}
@@ -1193,25 +1227,6 @@ const App: React.FC = () => {
             roundLocked={gameState.roundLocked || false}
             isPaused={gameState.isPaused}
             onTogglePause={handleTogglePause}
-          />
-        </section>
-
-        <section className="h-[500px] xl:h-[calc(100vh-6rem)] xl:sticky xl:top-20">
-          <ParticipantsPanel
-            participants={participants}
-            drawnBalls={gameState.drawnBalls}
-            winners={winners}
-            onAddCard={handleAddCard}
-            onDeleteCard={handleDeleteCard}
-            onDownloadCard={handleDownloadCard}
-            onEditParticipant={handleEditParticipant}
-            onDeleteParticipant={handleDeleteParticipant}
-            onDeleteAllParticipants={handleDeleteAllParticipants}
-            currentPattern={gameState.selectedPattern}
-            onShareCard={handleShareCard}
-            onShareAllCards={handleShareAllCards}
-            prizes={prizes}
-            totalCards={totalCards}
           />
         </section>
       </main>

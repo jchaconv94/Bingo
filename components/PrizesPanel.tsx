@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Gift, Plus, Trash2, CheckCircle, Circle, DollarSign, Edit2, Save, X } from 'lucide-react';
+import { Gift, Plus, Trash2, CheckCircle, Circle, DollarSign, Edit2, Save, X, Minus } from 'lucide-react';
 import { Prize } from '../types.ts';
 import { useAlert } from '../contexts/AlertContext.tsx';
 
@@ -9,9 +9,10 @@ interface Props {
   onRemovePrize: (id: string) => void;
   onEditPrize: (id: string, name: string, description: string) => void;
   onTogglePrize: (id: string) => void;
+  onClose: () => void;
 }
 
-const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEditPrize, onTogglePrize }) => {
+const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEditPrize, onTogglePrize, onClose }) => {
   const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     name: '',
@@ -30,6 +31,12 @@ const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEdi
     if (!formData.description) return;
 
     const nameToUse = formData.name.trim() || getNextName();
+    
+    if (prizes.some(p => p.name.toLowerCase() === nameToUse.toLowerCase())) {
+      await showAlert({ title: 'Nombre Duplicado', message: "Ya existe un premio con ese nombre.", type: 'warning' });
+      return;
+    }
+
     const amountValue = parseFloat(formData.description);
     
     if (isNaN(amountValue)) return;
@@ -59,65 +66,119 @@ const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEdi
     setEditForm({ name: '', description: '' });
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (editingId && editForm.description) {
+      if (prizes.some(p => p.id !== editingId && p.name.toLowerCase() === editForm.name.toLowerCase())) {
+        await showAlert({ title: 'Nombre Duplicado', message: "Ya existe otro premio con ese nombre.", type: 'warning' });
+        return;
+      }
       onEditPrize(editingId, editForm.name, editForm.description);
       setEditingId(null);
     }
   };
 
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 shadow-xl backdrop-blur-sm flex flex-col gap-4 shrink-0">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-white flex items-center gap-2">
-          <Gift className="text-amber-500" size={20} />
+    <div className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-6 shrink-0 relative overflow-hidden h-full max-h-[80vh]">
+      {/* Background decoration */}
+      <div className="absolute top-0 right-0 w-48 sm:w-64 h-48 sm:h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3"></div>
+
+      <div className="flex items-center justify-between pb-4 sm:pb-5 border-b border-slate-800/60 relative z-10 gap-2 shrink-0">
+        <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2 sm:gap-3">
+          <div className="p-2 bg-amber-500/10 rounded-xl border border-amber-500/20 text-amber-400 shadow-lg shadow-amber-900/10">
+            <Gift size={18} />
+          </div>
           Premios
         </h2>
-        <span className="text-xs font-bold bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700">
-          {prizes.filter(p => !p.isAwarded).length} Pendientes
-        </span>
-      </div>
-
-      <form onSubmit={handleSubmit} className="bg-slate-950/50 p-3 rounded-xl border border-slate-800/50 space-y-3">
-        <div>
-          <input
-            ref={nameInputRef}
-            type="text"
-            value={formData.name}
-            onChange={e => setFormData({...formData, name: e.target.value})}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 outline-none placeholder-slate-600"
-            placeholder={getNextName()}
-          />
-        </div>
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-             <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-             <input
-              type="number"
-              min="1"
-              max="10000"
-              step="0.01"
-              value={formData.description}
-              onChange={e => setFormData({...formData, description: e.target.value})}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-6 pr-3 py-2 text-sm text-white focus:border-amber-500 outline-none placeholder-slate-600 font-mono"
-              placeholder="0.00"
-              required
-            />
+        <div className="flex items-center gap-3 sm:gap-5">
+          <div className="flex flex-col items-end">
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase text-slate-500 mb-0.5 sm:mb-1 tracking-wider">Pendientes</span>
+            <span className="text-md sm:text-lg font-black text-amber-400 leading-none">{prizes.filter(p => !p.isAwarded).length}</span>
           </div>
-          <button 
-            type="submit"
-            className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white px-3 rounded-lg transition-all shadow-lg shadow-amber-900/20"
-            title="Agregar Premio"
-          >
-            <Plus size={20} />
+          <button onClick={onClose} className="p-2 bg-slate-800/80 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors border border-slate-700/50 shadow-sm">
+            <X size={18} />
           </button>
         </div>
-      </form>
+      </div>
 
-      <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+      <div className="relative z-10 shrink-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent rounded-2xl pointer-events-none"></div>
+        <form onSubmit={handleSubmit} className="relative bg-slate-900/50 p-4 sm:p-5 rounded-2xl border border-slate-800/80 shadow-inner space-y-3 sm:space-y-4">
+          
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Nombre del Premio</label>
+            <div className="relative group/input">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-amber-400 transition-colors">
+                <Gift size={16} />
+              </div>
+              <input
+                ref={nameInputRef}
+                type="text"
+                value={formData.name}
+                onChange={e => setFormData({...formData, name: e.target.value})}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 sm:py-3 text-sm text-white focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 outline-none transition-all shadow-sm placeholder-slate-600"
+                placeholder={getNextName()}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Valor del Premio (S/.)</label>
+            <div className="flex items-center justify-between gap-3 sm:gap-4 bg-slate-950 p-1.5 sm:p-2 rounded-xl border border-slate-800 shadow-inner">
+              <button
+                type="button"
+                onClick={() => {
+                  const current = parseFloat(formData.description) || 0;
+                  setFormData({ ...formData, description: (current >= 10 ? current - 10 : 0).toString() });
+                }}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-95 shadow-sm"
+              >
+                <Minus size={18} />
+              </button>
+              
+              <input
+                type="number"
+                min="0"
+                max="10000"
+                step="10"
+                required
+                value={formData.description}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                className="flex-1 bg-transparent text-white font-black text-2xl sm:text-3xl text-center border-none focus:ring-0 p-0 h-auto placeholder-slate-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="0"
+              />
+
+              <button
+                type="button"
+                onClick={() => {
+                  const current = parseFloat(formData.description) || 0;
+                  setFormData({ ...formData, description: (current + 10).toString() });
+                }}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/40 flex items-center justify-center text-emerald-500 hover:text-emerald-400 transition-all active:scale-95 shadow-sm"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+          </div>
+
+          <button 
+            type="submit"
+            className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
+          >
+            <Plus size={18} />
+            AÑADIR PREMIO
+          </button>
+        </form>
+      </div>
+
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 sm:pr-2 mt-1 sm:mt-2 relative z-10 space-y-2 sm:space-y-3">
         {prizes.length === 0 && (
-          <div className="text-center text-xs text-slate-600 py-4 italic border border-dashed border-slate-800 rounded-lg">
-            No hay premios registrados
+          <div className="flex flex-col items-center justify-center py-6 sm:py-10 px-4 text-center border border-dashed border-slate-800 rounded-2xl bg-slate-900/30">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-800 flex items-center justify-center mb-2 sm:mb-3">
+              <Gift className="text-slate-500" size={20} />
+            </div>
+            <p className="text-xs sm:text-sm font-medium text-slate-400">No hay premios registrados</p>
+            <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1">Agrega el primer premio para comenzar</p>
           </div>
         )}
         
@@ -128,71 +189,95 @@ const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEdi
             <div 
               key={prize.id} 
               className={`
-                flex items-center justify-between p-2 rounded-lg border transition-all group
+                relative overflow-hidden flex items-center justify-between p-3 rounded-xl border transition-all group
                 ${prize.isAwarded 
-                  ? 'bg-slate-800/30 border-slate-800 opacity-60' 
-                  : 'bg-slate-800/80 border-slate-700 hover:border-slate-600 hover:shadow-md'
+                  ? 'bg-slate-900/50 border-slate-800/50 opacity-60' 
+                  : 'bg-slate-800/40 border-slate-700/50 hover:border-amber-500/30 hover:bg-slate-800/80 hover:shadow-lg hover:shadow-amber-900/5'
                 }
               `}
             >
+              {/* Highlight bar for active prizes */}
+              {!prize.isAwarded && (
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500/50 rounded-l-xl"></div>
+              )}
+
               {isEditing ? (
-                <div className="flex-1 flex flex-col gap-2 animate-in fade-in duration-200">
+                <div className="flex-1 flex flex-col gap-3 animate-in fade-in duration-200 pl-2">
                   <input 
                     value={editForm.name}
                     onChange={e => setEditForm({...editForm, name: e.target.value})}
-                    className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white outline-none focus:border-cyan-500"
+                    className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50"
                     placeholder="Nombre"
+                    autoFocus
                   />
                   <div className="flex gap-2">
-                    <input 
-                      value={editForm.description}
-                      onChange={e => setEditForm({...editForm, description: e.target.value})}
-                      className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white outline-none focus:border-cyan-500 flex-1"
-                      placeholder="Desc"
-                    />
-                    <button onClick={saveEdit} className="bg-emerald-600 hover:bg-emerald-500 text-white px-2 rounded">
-                      <Save size={12} />
+                    <div className="relative flex-1">
+                      <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                      <input 
+                        type="number"
+                        step="1"
+                        value={editForm.description}
+                        onChange={e => setEditForm({...editForm, description: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-sm text-white outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 font-mono"
+                        placeholder="Valor"
+                      />
+                    </div>
+                    <button 
+                      onClick={saveEdit}
+                      className="p-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg transition-colors border border-emerald-500/20"
+                      title="Guardar"
+                    >
+                      <Save size={18} />
                     </button>
-                    <button onClick={cancelEdit} className="bg-slate-700 hover:bg-slate-600 text-white px-2 rounded">
-                      <X size={12} />
+                    <button 
+                      onClick={cancelEdit}
+                      className="p-2 bg-slate-700 text-slate-300 hover:bg-slate-600 rounded-lg transition-colors border border-slate-600"
+                      title="Cancelar"
+                    >
+                      <X size={18} />
                     </button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center gap-3 min-w-0">
-                    <button 
+                  <div className="flex items-center gap-4 pl-2">
+                    <button
                       onClick={() => onTogglePrize(prize.id)}
-                      className={`flex-shrink-0 transition-colors p-1 rounded-full bg-slate-900/50 ${prize.isAwarded ? 'text-emerald-500' : 'text-slate-600 hover:text-emerald-500'}`}
+                      className={`
+                        w-6 h-6 rounded-full flex items-center justify-center transition-all shrink-0
+                        ${prize.isAwarded 
+                          ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30' 
+                          : 'bg-slate-950 border border-slate-700 text-slate-600 hover:border-amber-500/50 hover:text-amber-500'
+                        }
+                      `}
                       title={prize.isAwarded ? "Marcar como pendiente" : "Marcar como entregado"}
                     >
-                      {prize.isAwarded ? <CheckCircle size={16} /> : <Circle size={16} />}
+                      {prize.isAwarded ? <CheckCircle size={14} /> : <Circle size={14} />}
                     </button>
-                    
-                    <div className="flex flex-col min-w-0">
-                      <span className={`text-xs font-bold truncate ${prize.isAwarded ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
+                    <div className="flex flex-col">
+                      <span className={`font-bold text-sm ${prize.isAwarded ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
                         {prize.name}
                       </span>
-                      <span className={`text-[11px] truncate ${prize.isAwarded ? 'text-slate-600' : 'text-amber-400 font-mono'}`}>
+                      <span className={`text-base font-mono mt-0.5 ${prize.isAwarded ? 'text-slate-600' : 'text-emerald-400 font-bold'}`}>
                         {prize.description}
                       </span>
                     </div>
                   </div>
-
+                  
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
                       onClick={() => startEdit(prize)}
-                      className="text-slate-500 hover:text-cyan-400 p-1.5 rounded hover:bg-slate-700/50 transition-colors"
+                      className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
                       title="Editar"
                     >
-                      <Edit2 size={14} />
+                      <Edit2 size={16} />
                     </button>
                     <button 
                       onClick={() => onRemovePrize(prize.id)}
-                      className="text-slate-500 hover:text-rose-400 p-1.5 rounded hover:bg-slate-700/50 transition-colors"
+                      className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                       title="Eliminar"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </>
@@ -200,6 +285,7 @@ const PrizesPanel: React.FC<Props> = ({ prizes, onAddPrize, onRemovePrize, onEdi
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );

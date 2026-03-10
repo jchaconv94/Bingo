@@ -22,6 +22,7 @@ interface Props {
   onShareAllCards?: (participant: Participant) => void;
   prizes?: Prize[];
   totalCards?: number;
+  onClose: () => void;
 }
 
 const ParticipantsPanel: React.FC<Props> = ({ 
@@ -38,7 +39,8 @@ const ParticipantsPanel: React.FC<Props> = ({
   onShareCard,
   onShareAllCards,
   prizes = [],
-  totalCards = 0
+  totalCards = 0,
+  onClose
 }) => {
   const { showAlert, showConfirm } = useAlert();
   const [search, setSearch] = useState('');
@@ -159,10 +161,10 @@ const ParticipantsPanel: React.FC<Props> = ({
         />
       )}
 
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-3 shadow-xl backdrop-blur-sm flex flex-col h-full">
+      <div className="p-4 flex flex-col min-h-[500px] max-h-[80vh]">
         <div className="flex flex-col gap-3 mb-3 flex-shrink-0">
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between pr-1">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800/60">
               <div className="flex items-center gap-3">
                 <h2 className="text-sm 2xl:text-[20px] font-bold text-white flex items-center gap-2">
                   <Users className="text-emerald-500 w-[18px] h-[18px] 2xl:w-6 2xl:h-6" />
@@ -180,6 +182,9 @@ const ParticipantsPanel: React.FC<Props> = ({
                   </div>
                 </div>
               </div>
+              <button onClick={onClose} className="p-2 bg-slate-800/80 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors border border-slate-700/50 shadow-sm">
+                <X size={20} />
+              </button>
             </div>
 
             <div className="flex items-center gap-2">
