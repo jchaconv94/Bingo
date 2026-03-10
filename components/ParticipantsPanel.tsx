@@ -161,8 +161,8 @@ const ParticipantsPanel: React.FC<Props> = ({
 
       <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-3 shadow-xl backdrop-blur-sm flex flex-col h-full">
         <div className="flex flex-col gap-3 mb-3 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 w-full justify-between pr-1">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between pr-1">
               <div className="flex items-center gap-3">
                 <h2 className="text-sm 2xl:text-[20px] font-bold text-white flex items-center gap-2">
                   <Users className="text-emerald-500 w-[18px] h-[18px] 2xl:w-6 2xl:h-6" />
@@ -180,32 +180,45 @@ const ParticipantsPanel: React.FC<Props> = ({
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white focus:ring-1 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                />
+              </div>
               
-              <div className="flex gap-2">
-                <button
-                  onClick={toggleGlobalCards}
-                  className={`p-2 rounded-lg transition-colors border border-slate-700 ${showCardsGlobal ? 'bg-slate-800 text-slate-400 hover:text-cyan-400' : 'bg-cyan-900/30 text-cyan-400 border-cyan-800'}`}
-                  title={showCardsGlobal ? "Ocultar TODOS los cartones" : "Mostrar TODOS los cartones"}
-                >
-                  <CreditCard size={18} />
-                </button>
-                <button
-                  onClick={() => setHideParticipants(!hideParticipants)}
-                  className={`p-2 rounded-lg transition-colors border border-slate-700 ${hideParticipants ? 'bg-cyan-900/30 text-cyan-400 border-cyan-800' : 'bg-slate-800 text-slate-400 hover:text-cyan-400'}`}
-                  title={hideParticipants ? "Mostrar nombres" : "Ocultar nombres (Privacidad)"}
-                >
-                  {hideParticipants ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-                {participants.length > 0 && (
+              {participants.length > 0 && (
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={toggleGlobalCards}
+                    className={`p-2.5 rounded-lg transition-colors border border-slate-700 ${showCardsGlobal ? 'bg-slate-800 text-slate-400 hover:text-cyan-400' : 'bg-cyan-900/30 text-cyan-400 border-cyan-800'}`}
+                    title={showCardsGlobal ? "Ocultar TODOS los cartones" : "Mostrar TODOS los cartones"}
+                  >
+                    <CreditCard size={18} />
+                  </button>
+                  <button
+                    onClick={() => setHideParticipants(!hideParticipants)}
+                    className={`p-2.5 rounded-lg transition-colors border border-slate-700 ${hideParticipants ? 'bg-cyan-900/30 text-cyan-400 border-cyan-800' : 'bg-slate-800 text-slate-400 hover:text-cyan-400'}`}
+                    title={hideParticipants ? "Mostrar nombres" : "Ocultar nombres (Privacidad)"}
+                  >
+                    {hideParticipants ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                   <button
                     onClick={onDeleteAllParticipants}
-                    className="p-2 rounded-lg transition-colors border border-slate-700 bg-slate-800 text-slate-400 hover:bg-rose-950/50 hover:text-rose-400 hover:border-rose-800/50"
+                    className="p-2.5 rounded-lg transition-colors border border-slate-700 bg-slate-800 text-slate-400 hover:bg-rose-950/50 hover:text-rose-400 hover:border-rose-800/50"
                     title="Eliminar TODOS los participantes"
                   >
                     <Trash2 size={18} />
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -281,16 +294,7 @@ const ParticipantsPanel: React.FC<Props> = ({
             </div>
           )}
 
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-            <input
-              type="text"
-              placeholder="Buscar..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white focus:ring-1 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
-            />
-          </div>
+
         </div>
 
         {/* List */}
