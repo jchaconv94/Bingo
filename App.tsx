@@ -1075,6 +1075,7 @@ const App: React.FC = () => {
         onClose={() => setActiveManagementModal('none')}
         maxWidth="max-w-4xl"
         noPadding
+        fullScreenMobile
       >
         <ParticipantsPanel
           participants={participants}

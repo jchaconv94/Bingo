@@ -9,14 +9,15 @@ interface Props {
   children: React.ReactNode;
   maxWidth?: string;
   noPadding?: boolean;
+  fullScreenMobile?: boolean;
 }
 
-const Modal: React.FC<Props> = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md', noPadding = false }) => {
+const Modal: React.FC<Props> = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md', noPadding = false, fullScreenMobile = true }) => {
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className={`relative bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl w-full ${maxWidth} flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200`}>
+    <div className={`fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm ${fullScreenMobile ? 'p-0 sm:p-4' : 'p-4'} animate-in fade-in duration-200`}>
+      <div className={`relative bg-slate-900 border border-slate-800 ${fullScreenMobile ? 'rounded-none sm:rounded-2xl max-h-[100dvh] sm:max-h-[85vh] h-full sm:h-auto border-x-0 sm:border-x' : 'rounded-2xl max-h-[85vh]'} shadow-2xl w-full ${maxWidth} flex flex-col overflow-hidden animate-in zoom-in-95 duration-200`}>
         
         {title && (
           <div className="flex justify-between items-center p-4 border-b border-slate-800/50 flex-shrink-0">

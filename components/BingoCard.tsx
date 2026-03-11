@@ -89,7 +89,7 @@ const BingoCard: React.FC<Props> = ({
             <span className={`uppercase font-bold text-slate-500 tracking-widest ${isPanelVariant ? 'text-[8px]' : isCompact ? 'text-[8px] sm:text-[9px]' : 'text-[9px]'}`}>
               Cartón N°
             </span>
-            <span className={`font-mono font-black tracking-tight ${isInvalid ? 'text-rose-900' : 'text-white'} ${isPanelVariant ? 'text-[13px]' : isCompact ? 'text-lg' : 'text-2xl'}`}>
+            <span className={`font-mono font-black tracking-tight ${isInvalid ? 'text-rose-900' : 'text-white'} ${isPanelVariant ? 'text-[13px]' : isCompact ? 'text-[15px] sm:text-lg' : 'text-2xl'}`}>
               {card.id}
             </span>
           </div>
@@ -151,7 +151,7 @@ const BingoCard: React.FC<Props> = ({
                className={`
                  aspect-square flex items-center justify-center font-black rounded-[2px] sm:rounded-md border shadow-sm select-none
                  ${isInvalid ? 'bg-slate-800 border-slate-700 text-slate-600' : `${h.bg} ${h.border} ${h.color}`}
-                 ${isPanelVariant ? 'text-[9px]' : isCompact ? 'text-sm sm:text-[17px]' : 'text-2xl'}
+                 ${isPanelVariant ? 'text-[9px]' : isCompact ? 'text-[12px] sm:text-[17px]' : 'text-2xl'}
                `}
              >
                {h.letter}
@@ -160,7 +160,7 @@ const BingoCard: React.FC<Props> = ({
         </div>
 
         {/* Numbers Grid 5x5 */}
-        <div className={`grid grid-cols-5 ${isPanelVariant ? 'gap-px text-[10px]' : isCompact ? 'gap-1 text-[15px] sm:text-base' : 'gap-2 text-base'}`}>
+        <div className={`grid grid-cols-5 ${isPanelVariant ? 'gap-px text-[10px]' : isCompact ? 'gap-0.5 sm:gap-1 text-[12px] sm:text-base' : 'gap-2 text-base'}`}>
           {card.numbers.map((number, index) => {
             const isCenter = index === 12;
             const isMarked = drawnBalls.includes(number);
@@ -173,7 +173,7 @@ const BingoCard: React.FC<Props> = ({
             if (isInvalid) {
                cellStyle = "bg-slate-900 border-slate-800 text-slate-700";
                if (isCenter) {
-                  content = <Ban size={isPanelVariant ? 10 : isCompact ? 18 : 24} className="text-slate-700" />;
+                  content = <Ban size={isPanelVariant ? 10 : isCompact ? 16 : 24} className="text-slate-700" />;
                }
             } else {
                // Normal Logic
@@ -184,7 +184,7 @@ const BingoCard: React.FC<Props> = ({
                       : "text-slate-600";
                    
                    cellStyle = "bg-slate-800/80 border-slate-700";
-                   content = <Star fill="currentColor" size={isPanelVariant ? 8 : isCompact ? 16 : 24} className={activeClass} />;
+                   content = <Star fill="currentColor" size={isPanelVariant ? 8 : isCompact ? 14 : 24} className={activeClass} />;
                 } else if (isMarked) {
                    // Marked Number
                    if (isRequiredByPattern) {
@@ -224,7 +224,7 @@ const BingoCard: React.FC<Props> = ({
       
       {/* Footer Info */}
       <div className={`
-        ${isPanelVariant ? 'px-1.5 py-0.5 text-[9px]' : isCompact ? 'px-1.5 py-0.5 text-[8px]' : 'px-4 py-2 text-xs'} 
+        ${isPanelVariant ? 'px-1.5 py-0.5 text-[9px]' : isCompact ? 'px-1 sm:px-1.5 py-[1px] sm:py-0.5 text-[7px] sm:text-[8px]' : 'px-4 py-2 text-xs'} 
         bg-slate-950 border-t border-slate-800 flex justify-between items-center font-medium text-slate-500
       `}>
          <span className="uppercase tracking-wider truncate max-w-[70%]">{WIN_PATTERNS[currentPattern].label}</span>

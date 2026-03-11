@@ -51,7 +51,7 @@ const ParticipantsPanel: React.FC<Props> = ({
   const [hideParticipants, setHideParticipants] = useState(false);
   
   // Global visibility state
-  const [showCardsGlobal, setShowCardsGlobal] = useState(true);
+  const [showCardsGlobal, setShowCardsGlobal] = useState(false);
   // Individual visibility overrides (id -> boolean)
   const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
   
