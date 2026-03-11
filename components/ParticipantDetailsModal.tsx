@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, User, Ticket, Phone, CreditCard, Trash2, Edit2, Plus, Hash, Fingerprint, Save, XCircle, MessageCircle, FileText } from 'lucide-react';
 import { Participant, PatternKey } from '../types.ts';
 import BingoCard from './BingoCard.tsx';
@@ -64,7 +65,7 @@ const ParticipantDetailsModal: React.FC<Props> = ({
     setIsEditing(false);
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
         
@@ -117,7 +118,7 @@ const ParticipantDetailsModal: React.FC<Props> = ({
                            <h3 className="text-2xl font-bold text-white truncate leading-tight">{participant.name}</h3>
                            <div className="text-xl text-slate-300 font-light truncate mb-1">{participant.surname}</div>
                            <span className="inline-flex items-center gap-1 bg-slate-950/50 px-2 py-0.5 rounded text-[10px] font-mono text-slate-400 border border-slate-800">
-                              ID: {participant.id}
+                               ID: {participant.id}
                            </span>
                          </>
                        )}
@@ -161,7 +162,7 @@ const ParticipantDetailsModal: React.FC<Props> = ({
 
                     <div className="flex-1 md:w-40 p-4 md:p-6 flex flex-col justify-center items-center bg-emerald-900/10 relative">
                        <div className="hidden md:block absolute left-0 top-4 bottom-4 w-px bg-slate-700/50"></div>
-                       <div className="flex items-center gap-2 text-xs text-emerald-400/80 uppercase tracking-wider mb-1 font-bold">
+                       <div className="flex items-center gap-2 text-emerald-400/80 uppercase tracking-wider mb-1 font-bold">
                           <Ticket size={14} /> Cartones
                        </div>
                        <div className="text-2xl md:text-3xl font-black text-emerald-400">{participant.cards.length}</div>
@@ -296,7 +297,8 @@ const ParticipantDetailsModal: React.FC<Props> = ({
            </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

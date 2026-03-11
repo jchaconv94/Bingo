@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, User, Calendar, Hash, Trophy, Gift, Users, Divide } from 'lucide-react';
 import { Participant, Winner, BingoCard as BingoCardType, PatternKey, Prize } from '../types.ts';
 import BingoCard from './BingoCard.tsx';
@@ -84,7 +85,7 @@ const WinnerDetailsModal: React.FC<Props> = ({
   // Si el cartón ya no está en la lista del participante, asumimos que es un Snapshot (eliminado).
   const isLiveCard = participant.cards.some(c => c.id === card.id);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
         
@@ -241,7 +242,8 @@ const WinnerDetailsModal: React.FC<Props> = ({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

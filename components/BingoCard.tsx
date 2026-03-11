@@ -58,7 +58,8 @@ const BingoCard: React.FC<Props> = ({
 
   return (
     <div className={`
-      relative overflow-hidden rounded-2xl transition-all duration-300 flex flex-col shadow-xl
+      relative overflow-hidden transition-all duration-300 flex flex-col shadow-xl
+      ${isCompact ? 'rounded-lg' : 'rounded-2xl'}
       ${isInvalid 
          ? 'bg-slate-950 border-2 border-rose-900/50 grayscale opacity-70'
          : isWinner 
@@ -79,26 +80,26 @@ const BingoCard: React.FC<Props> = ({
       {/* Top Bar: ID and Actions */}
       <div className={`
         flex flex-col bg-slate-950 border-b border-slate-800
-        ${isCompact ? 'p-2' : 'p-3'}
+        ${isCompact ? 'p-1' : 'p-3'}
       `}>
         <div className="flex items-start justify-between w-full">
           <div className="flex flex-col leading-none">
             <span className={`uppercase font-bold text-slate-500 tracking-widest ${isCompact ? 'text-[7px]' : 'text-[9px]'}`}>
               Cartón N°
             </span>
-            <span className={`font-mono font-black tracking-tight ${isInvalid ? 'text-rose-900' : 'text-white'} ${isCompact ? 'text-lg' : 'text-2xl'}`}>
+            <span className={`font-mono font-black tracking-tight ${isInvalid ? 'text-rose-900' : 'text-white'} ${isCompact ? 'text-base' : 'text-2xl'}`}>
               {card.id}
             </span>
           </div>
 
-          <div className="flex flex-col items-end gap-1">
+          <div className={`flex flex-col items-end gap-0.5`}>
             {isWinner && (
-              <div className={`font-black uppercase bg-amber-500 text-slate-950 rounded px-2 py-0.5 animate-pulse ${isCompact ? 'text-[9px]' : 'text-xs'}`}>
+              <div className={`font-black uppercase bg-amber-500 text-slate-950 rounded px-1 py-0.5 animate-pulse ${isCompact ? 'text-[7px]' : 'text-xs'}`}>
                 WINNER
               </div>
             )}
             {isInvalid && (
-               <div className={`font-black uppercase bg-rose-900 text-rose-400 rounded px-2 py-0.5 ${isCompact ? 'text-[9px]' : 'text-xs'}`}>
+               <div className={`font-black uppercase bg-rose-900 text-rose-400 rounded px-1 py-0.5 ${isCompact ? 'text-[7px]' : 'text-xs'}`}>
                   VOID
                </div>
             )}
@@ -106,31 +107,31 @@ const BingoCard: React.FC<Props> = ({
         </div>
 
         {!readOnly && (
-          <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-slate-800/50 w-full relative z-50">
+          <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-slate-800/50 w-full relative z-50">
             {hasPhone && onShare && (
               <button 
                 onClick={() => onShare(card.id)} 
-                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-slate-900 text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/50 border border-slate-800 hover:border-emerald-900/50 transition-colors text-[10px] font-bold uppercase tracking-wider"
+                className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-slate-900 text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/50 border border-slate-800 hover:border-emerald-900/50 transition-colors text-[8px] font-bold uppercase tracking-wider"
                 title="Enviar a WhatsApp"
               >
-                <MessageCircle size={14} />
+                <MessageCircle size={12} />
                 {!isCompact && <span>Enviar</span>}
               </button>
             )}
             <button 
               onClick={() => onDownload(card.id)} 
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-slate-900 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/50 border border-slate-800 hover:border-cyan-900/50 transition-colors text-[10px] font-bold uppercase tracking-wider"
+              className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-slate-900 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/50 border border-slate-800 hover:border-cyan-900/50 transition-colors text-[8px] font-bold uppercase tracking-wider"
               title="Descargar Imagen"
             >
-              <Download size={14} />
+              <Download size={12} />
               {!isCompact && <span>Guardar</span>}
             </button>
             <button 
               onClick={() => onDelete(card.id)} 
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-slate-900 text-slate-400 hover:text-rose-400 hover:bg-rose-950/50 border border-slate-800 hover:border-rose-900/50 transition-colors text-[10px] font-bold uppercase tracking-wider"
+              className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-slate-900 text-slate-400 hover:text-rose-400 hover:bg-rose-950/50 border border-slate-800 hover:border-rose-900/50 transition-colors text-[8px] font-bold uppercase tracking-wider"
               title="Eliminar"
             >
-              <Trash2 size={14} />
+              <Trash2 size={12} />
               {!isCompact && <span>Borrar</span>}
             </button>
           </div>
@@ -138,17 +139,17 @@ const BingoCard: React.FC<Props> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className={`${isCompact ? 'p-2' : 'p-4'} flex-1 flex flex-col bg-slate-900/50`}>
+      <div className={`${isCompact ? 'p-1' : 'p-4'} flex-1 flex flex-col bg-slate-900/50`}>
         
         {/* BINGO Header with Colored Pills */}
-        <div className={`grid grid-cols-5 ${isCompact ? 'gap-1 mb-1.5' : 'gap-2 mb-3'}`}>
+        <div className={`grid grid-cols-5 ${isCompact ? 'gap-0.5 mb-1' : 'gap-2 mb-3'}`}>
            {headers.map((h, i) => (
              <div 
                key={i} 
                className={`
                  flex items-center justify-center font-black rounded-md border shadow-sm select-none
                  ${isInvalid ? 'bg-slate-800 border-slate-700 text-slate-600' : `${h.bg} ${h.border} ${h.color}`}
-                 ${isCompact ? 'text-sm py-0.5' : 'text-2xl py-1'}
+                 ${isCompact ? 'text-[12px] py-0.5' : 'text-2xl py-1'}
                `}
              >
                {h.letter}
@@ -157,7 +158,7 @@ const BingoCard: React.FC<Props> = ({
         </div>
 
         {/* Numbers Grid 5x5 */}
-        <div className={`grid grid-cols-5 ${isCompact ? 'gap-1 text-[10px]' : 'gap-2 text-base'}`}>
+        <div className={`grid grid-cols-5 ${isCompact ? 'gap-0.5 text-[13px]' : 'gap-2 text-base'}`}>
           {card.numbers.map((number, index) => {
             const isCenter = index === 12;
             const isMarked = drawnBalls.includes(number);
@@ -181,7 +182,7 @@ const BingoCard: React.FC<Props> = ({
                       : "text-slate-600";
                    
                    cellStyle = "bg-slate-800/80 border-slate-700";
-                   content = <Star fill="currentColor" size={isCompact ? 14 : 24} className={activeClass} />;
+                   content = <Star fill="currentColor" size={isCompact ? 12 : 24} className={activeClass} />;
                 } else if (isMarked) {
                    // Marked Number
                    if (isRequiredByPattern) {
@@ -209,6 +210,7 @@ const BingoCard: React.FC<Props> = ({
                 className={`
                   aspect-square flex items-center justify-center rounded-md border transition-all duration-300 cursor-default
                   ${cellStyle}
+                  ${isCompact ? 'font-bold' : ''}
                 `}
               >
                 {content}
@@ -220,7 +222,7 @@ const BingoCard: React.FC<Props> = ({
       
       {/* Footer Info */}
       <div className={`
-        ${isCompact ? 'px-3 py-1 text-[9px]' : 'px-4 py-2 text-xs'} 
+        ${isCompact ? 'px-1.5 py-0.5 text-[8px]' : 'px-4 py-2 text-xs'} 
         bg-slate-950 border-t border-slate-800 flex justify-between items-center font-medium text-slate-500
       `}>
          <span className="uppercase tracking-wider truncate max-w-[70%]">{WIN_PATTERNS[currentPattern].label}</span>

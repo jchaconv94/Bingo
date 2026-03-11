@@ -16,7 +16,7 @@ import ConnectionModal from './components/ConnectionModal.tsx';
 import ManagementMenu from './components/ManagementMenu.tsx';
 import Modal from './components/Modal.tsx';
 import Login from './components/Login.tsx';
-import { Maximize2, Minimize2, PanelLeftOpen, Edit, FileText, Image as ImageIcon, Cloud, RefreshCw, Loader2, Link, Zap, LogOut, Menu, X, MessageCircle } from 'lucide-react';
+import { Maximize2, Minimize2, PanelLeftOpen, Edit, FileText, Image as ImageIcon, Cloud, RefreshCw, Loader2, Link, Zap, LogOut, Menu, X, MessageCircle, ChevronRight } from 'lucide-react';
 import { useAlert, AlertAction } from './contexts/AlertContext.tsx';
 
 // LocalStorage Keys
@@ -117,6 +117,7 @@ const App: React.FC = () => {
   const [showManagementMenu, setShowManagementMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [activeManagementModal, setActiveManagementModal] = useState<'none' | 'register' | 'prizes' | 'participants'>('none');
+  const [isParticipantsDrawerOpen, setIsParticipantsDrawerOpen] = useState(false);
 
   const totalCards = participants.reduce((acc, p) => acc + p.cards.length, 0);
 
@@ -989,6 +990,52 @@ const App: React.FC = () => {
         totalCards={totalCards}
       />
 
+      {/* Participants Side Drawer */}
+      <div 
+        className={`fixed top-0 right-0 h-full bg-slate-900 border-l border-slate-800 shadow-2xl z-[100] transition-all duration-500 ease-in-out ${isParticipantsDrawerOpen ? 'w-full md:w-1/3 translate-x-0' : 'w-0 translate-x-full'}`}
+      >
+        {isParticipantsDrawerOpen && (
+          <div className="h-full w-full overflow-hidden flex flex-col">
+            <ParticipantsPanel
+              participants={participants}
+              drawnBalls={gameState.drawnBalls}
+              winners={winners}
+              onAddCard={handleAddCard}
+              onDeleteCard={handleDeleteCard}
+              onDownloadCard={handleDownloadCard}
+              onEditParticipant={handleEditParticipant}
+              onDeleteParticipant={handleDeleteParticipant}
+              onDeleteAllParticipants={handleDeleteAllParticipants}
+              currentPattern={gameState.selectedPattern}
+              onShareCard={handleShareCard}
+              onShareAllCards={handleShareAllCards}
+              prizes={prizes}
+              totalCards={totalCards}
+              onClose={() => setIsParticipantsDrawerOpen(false)}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Drawer Toggle Arrow */}
+      {!isParticipantsDrawerOpen && (
+        <button
+          onClick={() => setIsParticipantsDrawerOpen(true)}
+          className="fixed right-0 top-1/2 -translate-y-1/2 z-[90] bg-slate-800/50 hover:bg-cyan-600/80 text-cyan-400 hover:text-white p-1.5 pl-0.5 rounded-l-xl border border-r-0 border-slate-700 transition-all group shadow-lg backdrop-blur-sm"
+          title="Ver Participantes"
+        >
+          <ChevronRight size={24} className="rotate-180 group-hover:-translate-x-0.5 transition-transform" />
+        </button>
+      )}
+
+      {/* Overlay for Drawer */}
+      {isParticipantsDrawerOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[95] md:hidden"
+          onClick={() => setIsParticipantsDrawerOpen(false)}
+        />
+      )}
+
       <Modal 
         isOpen={activeManagementModal === 'register'} 
         onClose={() => setActiveManagementModal('none')}
@@ -1025,7 +1072,7 @@ const App: React.FC = () => {
       <Modal 
         isOpen={activeManagementModal === 'participants'} 
         onClose={() => setActiveManagementModal('none')}
-        maxWidth="max-w-4xl"
+        maxWidth="max-w-5xl"
         noPadding
       >
         <ParticipantsPanel

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Users, Medal, Ticket, Edit2, Trash2, Save, X, Eye, EyeOff, CreditCard, ChevronDown, ChevronUp, ScanEye, Phone, Fingerprint, MessageCircle, FileText, MoreVertical } from 'lucide-react';
 import { Participant, Winner, BingoCard as BingoCardType, PatternKey, Prize } from '../types.ts';
 import BingoCard from './BingoCard.tsx';
@@ -60,6 +60,13 @@ const ParticipantsPanel: React.FC<Props> = ({
   } | null>(null);
 
   const [viewingParticipantId, setViewingParticipantId] = useState<string | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = () => setActiveMenuId(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   const viewingParticipant = viewingParticipantId 
     ? participants.find(p => p.id === viewingParticipantId) || null
@@ -161,7 +168,7 @@ const ParticipantsPanel: React.FC<Props> = ({
         />
       )}
 
-      <div className="p-4 flex flex-col min-h-[500px] max-h-[80vh]">
+      <div className="p-4 flex flex-col h-full overflow-hidden">
         <div className="flex flex-col gap-3 mb-3 flex-shrink-0">
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between pb-4 border-b border-slate-800/60">
@@ -311,18 +318,18 @@ const ParticipantsPanel: React.FC<Props> = ({
              return (
               <div 
                 key={p.id} 
-                className="relative bg-slate-900 rounded-xl border border-slate-800 hover:border-cyan-500/30 transition-all duration-300 shadow-sm group flex flex-col overflow-hidden"
+                className={`relative bg-slate-900 rounded-xl border border-slate-800 hover:border-cyan-500/30 transition-all duration-300 shadow-sm group flex flex-col ${activeMenuId === p.id ? 'z-50' : 'z-0'}`}
               >
-                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-slate-700 to-slate-800 group-hover:from-cyan-500 group-hover:to-blue-600 transition-colors duration-300"></div>
+                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-slate-700 to-slate-800 group-hover:from-cyan-500 group-hover:to-blue-600 transition-colors duration-300 rounded-l-xl"></div>
 
-                <div className="p-3 pl-5 flex items-center gap-3 relative">
+                <div className="p-2 pl-4 flex items-center gap-2 relative">
                   
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-md border border-slate-800 shadow-inner">
-                     <Ticket size={12} className="text-emerald-500" />
-                     <span className="text-xs font-bold text-emerald-400 font-mono">{p.cards.length}</span>
+                  <div className="absolute top-2 right-2 flex items-center gap-1 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 shadow-inner">
+                     <Ticket size={10} className="text-emerald-500" />
+                     <span className="text-[10px] font-bold text-emerald-400 font-mono">{p.cards.length}</span>
                   </div>
 
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 group-hover:border-cyan-500/50 flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0 transition-colors z-10">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 group-hover:border-cyan-500/50 flex items-center justify-center text-white font-bold text-base shadow-lg flex-shrink-0 transition-colors z-10">
                     {String(p.name || '?').charAt(0).toUpperCase()}
                   </div>
                   
@@ -393,12 +400,12 @@ const ParticipantsPanel: React.FC<Props> = ({
                 </div>
                 
                 {!isEditing && (
-                  <div className="bg-slate-950/30 border-t border-slate-800 pl-5 pr-3 py-1.5 flex items-center justify-between gap-2">
+                  <div className="bg-slate-950/30 border-t border-slate-800 pl-4 pr-2 py-1 flex items-center justify-between gap-1.5">
                     
                     <button 
                       onClick={() => toggleIndividualCard(p.id)}
                       className={`
-                        p-2 rounded-lg transition-all flex items-center justify-center gap-1 border
+                        p-1.5 rounded-lg transition-all flex items-center justify-center gap-1 border
                         ${isExpanded 
                           ? 'text-cyan-400 bg-cyan-950/20 border-cyan-900/30' 
                           : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300 border-slate-700'
@@ -406,28 +413,28 @@ const ParticipantsPanel: React.FC<Props> = ({
                       `}
                       title={isExpanded ? "Ocultar cartones" : "Ver cartones"}
                     >
-                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
 
-                    <div className="h-4 w-px bg-slate-800 mx-1"></div>
+                    <div className="h-3 w-px bg-slate-800 mx-0.5"></div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                        {p.phone && p.cards.length > 1 && (
                           <button 
                             onClick={() => onShareAllCards && onShareAllCards(p)}
-                            className="p-2.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/30 rounded-lg transition-colors border border-slate-700"
+                            className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/30 rounded-lg transition-colors border border-slate-700"
                             title="Compartir Todo"
                           >
-                            <FileText size={18} />
+                            <FileText size={16} />
                           </button>
                        )}
 
                        <button 
                         onClick={() => setViewingParticipantId(p.id)}
-                        className="p-2.5 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/30 rounded-lg transition-colors border border-slate-700"
+                        className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/30 rounded-lg transition-colors border border-slate-700"
                         title="Ver Detalles"
                       >
-                        <ScanEye size={18} />
+                        <ScanEye size={16} />
                       </button>
 
                       {/* Dropdown for Edit and Delete */}
@@ -435,23 +442,28 @@ const ParticipantsPanel: React.FC<Props> = ({
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            const menu = e.currentTarget.nextElementSibling;
-                            if (menu) menu.classList.toggle('hidden');
+                            setActiveMenuId(activeMenuId === p.id ? null : p.id);
                           }}
-                          className="p-2.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors border border-slate-700"
+                          className={`p-2 rounded-lg transition-colors border ${activeMenuId === p.id ? 'bg-slate-800 text-white border-cyan-500/50' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 border-slate-700'}`}
                           title="Opciones"
                         >
-                          <MoreVertical size={18} />
+                          <MoreVertical size={16} />
                         </button>
-                        <div className="absolute right-0 top-full mt-2 w-32 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-20 hidden">
+                        <div className={`absolute right-0 top-full mt-2 w-32 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-[100] ${activeMenuId === p.id ? 'animate-in fade-in zoom-in-95 duration-200' : 'hidden'}`}>
                           <button 
-                            onClick={() => startEdit(p)}
+                            onClick={() => {
+                              startEdit(p);
+                              setActiveMenuId(null);
+                            }}
                             className="w-full text-left px-4 py-2 text-xs text-amber-400 hover:bg-amber-950/30 flex items-center gap-2"
                           >
                             <Edit2 size={14} /> Editar
                           </button>
                           <button 
-                            onClick={() => onDeleteParticipant(p.id)}
+                            onClick={() => {
+                              onDeleteParticipant(p.id);
+                              setActiveMenuId(null);
+                            }}
                             className="w-full text-left px-4 py-2 text-xs text-rose-400 hover:bg-rose-950/30 flex items-center gap-2"
                           >
                             <Trash2 size={14} /> Eliminar
@@ -459,32 +471,32 @@ const ParticipantsPanel: React.FC<Props> = ({
                         </div>
                       </div>
 
-                      <div className="w-px h-8 bg-slate-800 mx-1"></div>
+                      <div className="w-px h-6 bg-slate-800 mx-0.5"></div>
 
                       <button 
                         onClick={async () => {
                            const confirm = await showConfirm({ 
-                               title: 'Cartón Extra', 
-                               message: `¿Estás seguro de añadir un cartón extra a ${p.name} ${p.surname}?`,
-                               type: 'confirm',
-                               confirmText: 'Sí, añadir'
+                                title: 'Cartón Extra', 
+                                message: `¿Estás seguro de añadir un cartón extra a ${p.name} ${p.surname}?`,
+                                type: 'confirm',
+                                confirmText: 'Sí, añadir'
                            });
                            if (confirm) {
-                              onAddCard(p.id);
+                               onAddCard(p.id);
                            }
                         }}
-                        className="flex items-center gap-2 px-4 py-3 rounded-lg bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-500 hover:text-emerald-400 border border-emerald-500/20 transition-all shadow-sm"
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-500 hover:text-emerald-400 border border-emerald-500/20 transition-all shadow-sm"
                         title="Agregar cartón extra"
                       >
-                        <Ticket size={18} /> 
-                        <span className="text-xs font-bold">+1</span>
+                        <Ticket size={16} /> 
+                        <span className="text-[10px] font-bold">+1</span>
                       </button>
                     </div>
                   </div>
                 )}
                 
                 {isExpanded && (
-                  <div className="p-3 grid grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-200 border-t border-slate-800 bg-slate-950/50 shadow-inner">
+                  <div className="p-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 animate-in slide-in-from-top-2 duration-200 border-t border-slate-800 bg-slate-950/50 shadow-inner rounded-b-xl">
                     {p.cards.map(card => (
                       <BingoCard 
                         key={card.id}

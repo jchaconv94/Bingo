@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface Props {
@@ -13,9 +14,9 @@ interface Props {
 const Modal: React.FC<Props> = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md', noPadding = false }) => {
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className={`relative bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl w-full ${maxWidth} flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200`}>
+  return createPortal(
+    <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className={`relative bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl w-full ${maxWidth} flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200`}>
         
         {title && (
           <div className="flex justify-between items-center p-4 border-b border-slate-800/50 flex-shrink-0">
@@ -25,11 +26,12 @@ const Modal: React.FC<Props> = ({ isOpen, onClose, title, children, maxWidth = '
             </button>
           </div>
         )}
-        <div className={`flex flex-col flex-1 min-h-0 ${noPadding ? '' : 'overflow-y-auto custom-scrollbar p-4'}`}>
+        <div className={`flex flex-col flex-1 min-h-0 overflow-hidden ${noPadding ? '' : 'overflow-y-auto custom-scrollbar p-4'}`}>
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
