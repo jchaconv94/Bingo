@@ -15,6 +15,8 @@ interface Props {
   isPanelVariant?: boolean;
   currentPattern?: PatternKey; // Optional, defaults to FULL if not provided
   readOnly?: boolean;
+  hideDelete?: boolean;
+  isRetired?: boolean;
 }
 
 const BingoCard: React.FC<Props> = ({ 
@@ -27,10 +29,12 @@ const BingoCard: React.FC<Props> = ({
   isCompact = false, 
   isPanelVariant = false,
   currentPattern = 'FULL',
-  readOnly = false
+  readOnly = false,
+  hideDelete = false,
+  isRetired = false
 }) => {
   
-  const isInvalid = card.isInvalid;
+  const isInvalid = card.isInvalid || isRetired;
   const patternIndices = WIN_PATTERNS[currentPattern].indices;
 
   // Calculate if this card is a winner based on the pattern
@@ -73,8 +77,8 @@ const BingoCard: React.FC<Props> = ({
       {/* Overlay for Invalid Cards */}
       {isInvalid && (
          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[1px] pointer-events-none">
-            <div className="bg-rose-600/90 text-white font-black text-lg sm:text-2xl border-4 border-white/20 px-4 py-1 rotate-[-15deg] shadow-2xl tracking-widest uppercase">
-               ANULADO
+            <div className={`font-black text-lg sm:text-2xl border-4 border-white/20 px-4 py-1 rotate-[-15deg] shadow-2xl tracking-widest uppercase ${isRetired ? 'bg-amber-600/90 text-white' : 'bg-rose-600/90 text-white'}`}>
+               {isRetired ? 'RETIRADO' : 'ANULADO'}
             </div>
          </div>
       )}
@@ -128,14 +132,16 @@ const BingoCard: React.FC<Props> = ({
               <Download size={isPanelVariant ? 10 : 12} />
               {!isCompact && !isPanelVariant && <span>Guardar</span>}
             </button>
-            <button 
-              onClick={() => onDelete(card.id)} 
-              className={`flex-1 flex items-center justify-center bg-slate-900 text-slate-400 hover:text-rose-400 hover:bg-rose-950/50 border border-slate-800 hover:border-rose-900/50 transition-colors font-bold uppercase tracking-wider ${isPanelVariant ? 'gap-0.5 py-1.5 text-[6px] rounded-[3px]' : 'gap-1 py-2 rounded-md text-[8px]'}`}
-              title="Eliminar"
-            >
-              <Trash2 size={isPanelVariant ? 10 : 12} />
-              {!isCompact && !isPanelVariant && <span>Borrar</span>}
-            </button>
+            {!hideDelete && (
+              <button 
+                onClick={() => onDelete(card.id)} 
+                className={`flex-1 flex items-center justify-center bg-slate-900 text-slate-400 hover:text-rose-400 hover:bg-rose-950/50 border border-slate-800 hover:border-rose-900/50 transition-colors font-bold uppercase tracking-wider ${isPanelVariant ? 'gap-0.5 py-1.5 text-[6px] rounded-[3px]' : 'gap-1 py-2 rounded-md text-[8px]'}`}
+                title="Eliminar"
+              >
+                <Trash2 size={isPanelVariant ? 10 : 12} />
+                {!isCompact && !isPanelVariant && <span>Borrar</span>}
+              </button>
+            )}
           </div>
         )}
       </div>

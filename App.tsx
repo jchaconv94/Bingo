@@ -75,7 +75,7 @@ const App: React.FC = () => {
   const [hasInitialCloudSync, setHasInitialCloudSync] = useState(false);
   
   // Contadores para evitar que polling sobreescriba cambios locales
-  const syncLockRef = useRef({ gameState: false, winners: false, prizes: false, config: false });
+  const syncLockRef = useRef({ gameState: false, winners: false, prizes: false, config: false, participants: false });
   // Banderas para ignorar eventos de autosync tras recibir un payload en la nube
   const skipSyncRef = useRef({ gameState: false, winners: false, prizes: false });
   const timersRef = useRef<{ [key: string]: NodeJS.Timeout | null }>({ gameState: null, winners: null, prizes: null, config: null });
@@ -214,8 +214,10 @@ const App: React.FC = () => {
       const result = await SheetAPI.fetchAll(sheetUrl);
       if (result.success && Array.isArray(result.data)) {
         const cloudData = result.data;
+        console.log("loadFromCloud: Fetched data", cloudData);
         const reversedData = [...cloudData].reverse();
         setParticipants(prev => {
+          if (syncLockRef.current.participants) return prev;
           if (JSON.stringify(prev) === JSON.stringify(reversedData)) return prev;
           return reversedData;
         });
@@ -340,7 +342,7 @@ const App: React.FC = () => {
         if (key === 'config') {
           Object.assign(payload, value); // { eventTitle, etc... }
         } else {
-          payload[key] = typeof value === 'string' ? value : JSON.stringify(value);
+          payload[key] = value;
         }
         await SheetAPI.syncSettings(sheetUrl, payload);
       } catch (e) {
@@ -466,12 +468,14 @@ const App: React.FC = () => {
     }
 
     // 1. Update Local State (Optimistic)
+    syncLockRef.current.participants = true;
     setParticipants(prev => [newParticipant, ...prev]);
     setGameState(prev => ({ ...prev, lastCardSequence: currentSeq }));
     addLog(`Registrado ${newParticipant.name} con ${cardsCount} cartones`);
 
     // 2. Sync to Cloud (Background)
-    syncToCloud('save', newParticipant);
+    await syncToCloud('save', newParticipant);
+    syncLockRef.current.participants = false;
 
     const successActions: AlertAction[] = [];
 
@@ -498,6 +502,7 @@ const App: React.FC = () => {
     const currentP = participants.find(p => p.id === id);
     if (!currentP) return;
 
+    syncLockRef.current.participants = true;
     const updatedP = {
       ...currentP,
       ...data,
@@ -509,7 +514,8 @@ const App: React.FC = () => {
     addLog(`Participante editado: ${data.name} ${data.surname}`);
 
     // Sync
-    syncToCloud('save', updatedP);
+    await syncToCloud('save', updatedP);
+    syncLockRef.current.participants = false;
 
     showAlert({ title: 'Actualización Exitosa', message: 'Los datos del participante han sido actualizados en local y nube.', type: 'success' });
   };
@@ -538,11 +544,13 @@ const App: React.FC = () => {
     });
 
     if (confirmed) {
+      syncLockRef.current.participants = true;
       setParticipants(prev => prev.filter(p => p.id !== id));
       addLog(`Participante eliminado: ${p.name} ${p.surname}`);
 
       // Sync
-      syncToCloud('delete', id);
+      await syncToCloud('delete', id);
+      syncLockRef.current.participants = false;
 
       showAlert({ title: 'Eliminado', message: 'El participante ha sido eliminado correctamente.', type: 'success' });
     }
@@ -847,6 +855,30 @@ const App: React.FC = () => {
     }
   };
 
+  const handleRetireCard = async (participantId: string, cardId: string) => {
+    syncLockRef.current.participants = true;
+    let updatedParticipant: Participant | null = null;
+    setParticipants(prev => prev.map(p => {
+      if (p.id === participantId) {
+        updatedParticipant = {
+          ...p,
+          cards: p.cards.map(c => c.id === cardId ? { ...c, isRetired: true } : c)
+        };
+        return updatedParticipant;
+      }
+      return p;
+    }));
+    
+    if (updatedParticipant) {
+      await syncToCloud('save', updatedParticipant);
+      await loadFromCloud(false);
+    }
+    
+    syncLockRef.current.participants = false;
+    setViewingDetailsData(null);
+    showAlert({ title: 'Cartón Retirado', message: 'El cartón ha sido retirado del juego exitosamente.', type: 'success' });
+  };
+
   const handleCloseWinnerModal = () => {
     setCurrentBatchWinners([]);
   };
@@ -1137,6 +1169,7 @@ const App: React.FC = () => {
               currentPattern={gameState.selectedPattern}
               onShareCard={handleShareCard}
               onShareAllCards={handleShareAllCards}
+              onRetireCard={handleRetireCard}
               prizes={prizes}
               totalCards={totalCards}
               variant="drawer"
@@ -1219,6 +1252,7 @@ const App: React.FC = () => {
           currentPattern={gameState.selectedPattern}
           onShareCard={handleShareCard}
           onShareAllCards={handleShareAllCards}
+          onRetireCard={handleRetireCard}
           prizes={prizes}
           totalCards={totalCards}
           onClose={() => setActiveManagementModal('none')}
@@ -1289,6 +1323,7 @@ const App: React.FC = () => {
           onDeleteCard={handleDeleteCard}
           onDownloadCard={handleDownloadCard}
           onShareCard={(cardId) => handleShareCard(viewingDetailsData.participant, cardId)}
+          onRetireCard={() => handleRetireCard(viewingDetailsData.participant.id, viewingDetailsData.card.id)}
           prizes={prizes}
           allWinners={winners}
         />
@@ -1393,6 +1428,8 @@ const App: React.FC = () => {
             roundLocked={gameState.roundLocked || false}
             isPaused={gameState.isPaused}
             onTogglePause={handleTogglePause}
+            winners={winners}
+            onViewWinner={handleViewDetailsFromSummary}
           />
         </section>
       </main>

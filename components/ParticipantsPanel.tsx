@@ -20,6 +20,7 @@ interface Props {
   currentPattern: PatternKey;
   onShareCard?: (participant: Participant, cardId: string) => void;
   onShareAllCards?: (participant: Participant) => void;
+  onRetireCard: (participantId: string, cardId: string) => void;
   prizes?: Prize[];
   totalCards?: number;
   onClose: () => void;
@@ -39,6 +40,7 @@ const ParticipantsPanel: React.FC<Props> = ({
   currentPattern,
   onShareCard,
   onShareAllCards,
+  onRetireCard,
   prizes = [],
   totalCards = 0,
   onClose,
@@ -143,6 +145,7 @@ const ParticipantsPanel: React.FC<Props> = ({
           onDeleteCard={onDeleteCard}
           onDownloadCard={onDownloadCard}
           onShareCard={onShareCard ? (cardId) => onShareCard(viewingWinnerData.participant, cardId) : undefined}
+          onRetireCard={onRetireCard}
           prizes={prizes}
           allWinners={winners}
         />
@@ -274,7 +277,7 @@ const ParticipantsPanel: React.FC<Props> = ({
                   }
 
                   return (
-                    <div key={i} className="relative overflow-hidden bg-slate-900 border border-slate-700/50 p-2 rounded-lg flex items-stretch gap-3 group hover:border-amber-500/50 transition-all duration-300 shadow-sm">
+                    <div key={`${w.participantId}-${w.cardId}-${w.timestamp}`} className="relative overflow-hidden bg-slate-900 border border-slate-700/50 p-2 rounded-lg flex items-stretch gap-3 group hover:border-amber-500/50 transition-all duration-300 shadow-sm">
                        <div className="w-[4.5rem] bg-gradient-to-b from-amber-400 to-amber-600 rounded flex flex-col items-center justify-center text-slate-900 shadow-inner shrink-0 relative overflow-hidden">
                           <div className="absolute top-0 inset-x-0 h-[1px] bg-white/40"></div>
                           <span className="text-[8px] font-black uppercase text-amber-900/60 tracking-tighter mb-0 leading-none">PREMIO</span>
@@ -517,6 +520,7 @@ const ParticipantsPanel: React.FC<Props> = ({
                         isPanelVariant={variant === 'drawer'}
                         isCompact={variant === 'modal'}
                         currentPattern={currentPattern}
+                        isRetired={card.isRetired}
                       />
                     ))}
                   </div>

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, RotateCcw, Trophy, Hash, History, LayoutGrid, Eye, X, Star, Gift, CheckCircle, Circle, PauseCircle, PlayCircle, Lock } from 'lucide-react';
-import { PatternKey, WinPattern, Prize } from '../types.ts';
+import { PatternKey, WinPattern, Prize, Winner } from '../types.ts';
 import { WIN_PATTERNS } from '../utils/helpers.ts';
 
 interface Props {
@@ -14,9 +14,11 @@ interface Props {
   onPatternChange: (pattern: PatternKey) => void;
   prizes?: Prize[];
   onTogglePrize?: (id: string) => void;
+  onViewWinner?: (winner: Winner) => void;
   roundLocked: boolean;
   isPaused?: boolean;
   onTogglePause?: () => void;
+  winners?: Winner[];
 }
 
 const getBingoLetter = (num: number): string => {
@@ -108,9 +110,11 @@ const GamePanel: React.FC<Props> = ({
   onPatternChange,
   prizes = [],
   onTogglePrize,
+  onViewWinner,
   roundLocked,
   isPaused = false,
-  onTogglePause
+  onTogglePause,
+  winners = []
 }) => {
   const [currentBall, setCurrentBall] = useState<number | string>('—');
   const [isAnimating, setIsAnimating] = useState(false);
@@ -487,6 +491,58 @@ const GamePanel: React.FC<Props> = ({
               </div>
             </div>
           </div>
+
+          {/* Lista de Ganadores (Derecha) */}
+          {winners.length > 0 && (
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-80 xl:w-96 hidden lg:flex flex-col gap-3 max-h-[80%] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pr-2 pl-3 py-2">
+              <div className="flex items-center gap-2 mb-1 px-1">
+                <Trophy className="text-amber-400" size={16} />
+                <div className="text-[11px] font-black text-amber-400 uppercase tracking-widest">
+                  GANADORES RECIENTES ({winners.length})
+                </div>
+              </div>
+              {[...winners].reverse().slice(0, 5).map((winner, idx) => {
+                // Find prize info if available
+                const prize = prizes.find(p => p.isAwarded); // Simplificación
+                return (
+                  <div
+                    key={`${winner.participantId}-${winner.cardId}-${idx}`}
+                    onClick={() => onViewWinner && onViewWinner(winner)}
+                    className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 shadow-lg backdrop-blur-sm transition-all hover:border-amber-500/30 group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Premio */}
+                      <div className="flex-shrink-0 w-16 h-14 bg-gradient-to-b from-amber-400 to-amber-600 rounded-lg flex flex-col items-center justify-center text-slate-950 p-1">
+                        <div className="text-[8px] font-bold uppercase opacity-80">Premio</div>
+                        <div className="text-xs font-black">S/ 50.00</div>
+                      </div>
+                      
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-white truncate mb-1">
+                          {winner.participantName}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[10px] text-emerald-400 font-mono">
+                            Cartón: {winner.cardId}
+                          </div>
+                          <div className="bg-amber-950/50 border border-amber-900 rounded px-2 py-0.5 text-[10px] text-amber-400 font-mono flex items-center gap-1">
+                            <span className="w-3 h-3 rounded-full bg-amber-500 text-[8px] flex items-center justify-center text-slate-950 font-bold">{winner.winningNumber}</span>
+                            Bolilla
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Ojo */}
+                      <div className="text-slate-600 group-hover:text-amber-400 transition-colors">
+                        <Eye size={16} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Pattern Mini Preview */}
           <div className="absolute bottom-0 right-0 sm:right-4 text-xs sm:text-sm text-slate-400 font-bold bg-slate-950/90 px-3 py-1.5 rounded-full border border-slate-700 flex items-center gap-2 shadow-lg z-20">

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { X, User, Calendar, Hash, Trophy, Gift, Users, Divide } from 'lucide-react';
+import { X, User, Calendar, Hash, Trophy, Gift, Users, Divide, Ban } from 'lucide-react';
 import { Participant, Winner, BingoCard as BingoCardType, PatternKey, Prize } from '../types.ts';
 import BingoCard from './BingoCard.tsx';
 
@@ -15,6 +15,7 @@ interface Props {
   onDeleteCard: (participantId: string, cardId: string) => void;
   onDownloadCard: (participant: Participant, cardId: string) => void;
   onShareCard?: (cardId: string) => void;
+  onRetireCard: (participantId: string, cardId: string) => void;
   prizes?: Prize[];
   allWinners?: Winner[];
 }
@@ -29,6 +30,7 @@ const WinnerDetailsModal: React.FC<Props> = ({
   onDeleteCard,
   onDownloadCard,
   onShareCard,
+  onRetireCard,
   prizes = [],
   allWinners = []
 }) => {
@@ -212,7 +214,6 @@ const WinnerDetailsModal: React.FC<Props> = ({
 
             {/* Right: The Winning Card */}
             <div>
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Cartón Ganador</h3>
               <div> 
                 <BingoCard 
                   card={card} 
@@ -224,6 +225,8 @@ const WinnerDetailsModal: React.FC<Props> = ({
                   isCompact={false}
                   currentPattern={displayPattern}
                   readOnly={!isLiveCard} // Disable actions if snapshot
+                  hideDelete={true}
+                  isRetired={card.isRetired}
                 />
               </div>
             </div>
@@ -232,12 +235,13 @@ const WinnerDetailsModal: React.FC<Props> = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-slate-950/50 px-6 py-4 border-t border-slate-800 text-right">
-          <button 
-            onClick={onClose}
-            className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold rounded-lg transition-colors"
+        <div className="bg-slate-950/50 px-6 py-4 border-t border-slate-800 flex justify-end items-center gap-4">
+          <button
+            onClick={() => onRetireCard(participant.id, card.id)}
+            className="flex items-center gap-2 bg-rose-900/50 hover:bg-rose-800 text-rose-200 border border-rose-700 rounded-lg px-4 py-2 text-sm font-bold uppercase tracking-wider transition-colors"
           >
-            Cerrar
+            <Ban size={16} />
+            RETIRAR CARTÓN DEL JUEGO
           </button>
         </div>
 
