@@ -57,9 +57,10 @@ export const SheetAPI = {
 
   async deleteParticipant(url: string, id: string): Promise<ApiResponse> {
     try {
-      const endpoint = `${url}?action=delete&id=${id}`;
+      const endpoint = `${url}?action=delete`;
       const response = await fetch(endpoint, {
-        method: 'POST', // Usamos POST para activar el trigger doPost aunque sea delete
+        method: 'POST',
+        body: JSON.stringify({ action: 'delete', id }),
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       });
       const json = await response.json();
@@ -74,6 +75,7 @@ export const SheetAPI = {
         const endpoint = `${url}?action=delete_all`;
         const response = await fetch(endpoint, {
           method: 'POST',
+          body: JSON.stringify({ action: 'delete_all' }),
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         });
         const json = await response.json();
