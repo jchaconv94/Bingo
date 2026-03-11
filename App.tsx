@@ -34,7 +34,7 @@ const LS_KEYS = {
 };
 
 // URL por defecto proporcionada por el usuario
-const DEFAULT_SHEET_URL = "https://script.google.com/macros/s/AKfycbz7n1aPpHRm-IvqT-fj8qBUmCWBM_AR6KtyMT0oGG5xUdfZV2P2NnAu3U89MuAPqukL-w/exec";
+const DEFAULT_SHEET_URL = "https://script.google.com/macros/s/AKfycby9q15moUkMOlwMbaiG_GZj0NthRpbXGxlhYBphcLscz3iu2Y8kxcbf1cvUSk2V4zxz2w/exec";
 
 const loadFromStorage = <T,>(key: string, fallback: T): T => {
   try {
@@ -57,7 +57,14 @@ const App: React.FC = () => {
 
   // --- Configuración de Nube ---
   const [sheetUrl, setSheetUrl] = useState<string>(() => {
-    const saved = loadFromStorage(LS_KEYS.SHEET_URL, '');
+    const saved = loadFromStorage(LS_KEYS.SHEET_URL, '') as string;
+
+    // MIGRACIÓN: Si el usuario tiene la URL antigua por defecto, forzamos la nueva
+    const OLD_DEFAULT = "https://script.google.com/macros/s/AKfycbz7n1aPpHRm-IvqT-fj8qBUmCWBM_AR6KtyMT0oGG5xUdfZV2P2NnAu3U89MuAPqukL-w/exec";
+    if (saved === OLD_DEFAULT) {
+      return DEFAULT_SHEET_URL;
+    }
+
     return saved || DEFAULT_SHEET_URL;
   });
 
@@ -67,9 +74,11 @@ const App: React.FC = () => {
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [showLoginConnection, setShowLoginConnection] = useState(false);
-  
+
   // Ref para evitar solapamiento de peticiones en polling
   const isPollingRef = useRef(false);
+  const isFirstLoadRef = useRef(true); // Para saber si es el primer render
+  const [hasInitialCloudSync, setHasInitialCloudSync] = useState(false);
 
   // --- State con Inicialización Perezosa ---
   const [participants, setParticipants] = useState<Participant[]>(() =>
@@ -196,64 +205,92 @@ const App: React.FC = () => {
   const loadFromCloud = async (silent: boolean = false) => {
     if (!sheetUrl) return;
 
-    // Si es sync silencioso y ya hay uno en curso, saltamos este ciclo
     if (silent && isPollingRef.current) return;
-
     if (silent) isPollingRef.current = true;
     if (!silent) setIsSyncing(true);
 
     try {
+      // 1. Fetch Participants
       const result = await SheetAPI.fetchAll(sheetUrl);
       if (result.success && Array.isArray(result.data)) {
         const cloudData = result.data;
-        // Invertimos el orden para que los nuevos (al final del sheet) aparezcan primero
         const reversedData = [...cloudData].reverse();
-
         setParticipants(prev => {
-          // Comprobación simple para evitar re-renders innecesarios si los datos son idénticos
-          if (JSON.stringify(prev) === JSON.stringify(reversedData)) {
-            return prev;
-          }
+          if (JSON.stringify(prev) === JSON.stringify(reversedData)) return prev;
           return reversedData;
         });
 
-        // Actualizar secuencia de cartones basada en lo importado
+        // Actualizar secuencia de cartones
         let maxSeq = 100;
         reversedData.forEach(p => p.cards.forEach(c => {
-          // Extraer solo la parte numérica antes del guion (ej: C0298-A1B -> 0298)
           const num = parseInt(c.id.split('-')[0].replace(/\D/g, ''));
           if (!isNaN(num) && num > maxSeq) maxSeq = num;
         }));
-
         setGameState(prev => {
-          if (maxSeq > prev.lastCardSequence) {
-            return { ...prev, lastCardSequence: maxSeq };
-          }
+          if (maxSeq > prev.lastCardSequence) return { ...prev, lastCardSequence: maxSeq };
           return prev;
         });
       }
 
-      // Fetch Settings separately
+      // 2. Fetch Settings & Full Game State
       const settingsResult = await SheetAPI.fetchSettings(sheetUrl);
       if (settingsResult.success && settingsResult.settings) {
         const s = settingsResult.settings;
+
+        // Settings Básicos
         if (s.eventTitle) setBingoTitle(s.eventTitle);
         if (s.eventSubtitle) setBingoSubtitle(s.eventSubtitle);
         if (s.cardPrice) setCardPrice(Number(s.cardPrice));
-        if (s.sheetUrl) setSheetUrl(s.sheetUrl);
+        if (s.sheetUrl && s.sheetUrl !== sheetUrl) setSheetUrl(s.sheetUrl);
+
+        // Game State (Balls, History, Pattern, etc.)
+        if (s.gameState) {
+          try {
+            const cloudGS = typeof s.gameState === 'string' ? JSON.parse(s.gameState) : s.gameState;
+            setGameState(prev => {
+              // Fusionar con cuidado para no perder lastCardSequence local si es mayor
+              const merged = { ...prev, ...cloudGS };
+              if (prev.lastCardSequence > merged.lastCardSequence) {
+                merged.lastCardSequence = prev.lastCardSequence;
+              }
+              if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+              return merged;
+            });
+          } catch (e) { console.error("Error parsing gameState from cloud", e); }
+        }
+
+        // Winners
+        if (s.winners) {
+          try {
+            const cloudWinners = typeof s.winners === 'string' ? JSON.parse(s.winners) : s.winners;
+            setWinners(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(cloudWinners)) return prev;
+              return cloudWinners;
+            });
+          } catch (e) { console.error("Error parsing winners from cloud", e); }
+        }
+
+        // Prizes
+        if (s.prizes) {
+          try {
+            const cloudPrizes = typeof s.prizes === 'string' ? JSON.parse(s.prizes) : s.prizes;
+            setPrizes(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(cloudPrizes)) return prev;
+              return cloudPrizes;
+            });
+          } catch (e) { console.error("Error parsing prizes from cloud", e); }
+        }
       }
 
-      if (!silent) {
-        showToast('¡Datos sincronizados correctamente!', 'success');
-      }
+      if (!silent) showToast('¡Datos sincronizados correctamente!', 'success');
+      setHasInitialCloudSync(true);
     } catch (error) {
       console.error("Error inesperado en loadFromCloud:", error);
-      if (!silent) {
-        showAlert({ title: 'Error Inesperado', message: 'Ocurrió un error al intentar conectar con la hoja de cálculo.', type: 'danger' });
-      }
+      if (!silent) showAlert({ title: 'Error de Sincronización', message: 'Ocurrió un error al intentar conectar con la nube.', type: 'danger' });
     } finally {
       if (silent) isPollingRef.current = false;
       if (!silent) setIsSyncing(false);
+      isFirstLoadRef.current = false;
     }
   };
 
@@ -281,31 +318,48 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSaveSettings = async (title?: string, subtitle?: string, price?: number, url?: string) => {
+  const handleSaveSettings = async (title?: string, subtitle?: string, price?: number, url?: string, silent: boolean = false) => {
+    const newTitle = title ?? bingoTitle;
+    const newSubtitle = subtitle ?? bingoSubtitle;
+    const newPrice = price ?? cardPrice;
+    const targetUrl = url || sheetUrl;
+
     if (title !== undefined) setBingoTitle(title);
     if (subtitle !== undefined) setBingoSubtitle(subtitle);
-    if (price !== undefined) setCardPrice(price);
-    if (url !== undefined) setSheetUrl(url);
-    
-    const targetUrl = url || sheetUrl;
-    if (targetUrl) {
-      setIsSyncing(true);
+    if (price !== undefined) setCardPrice(newPrice);
+    if (url !== undefined) setSheetUrl(targetUrl);
+
+    if (targetUrl && (hasInitialCloudSync || url !== undefined)) {
+      if (!silent) setIsSyncing(true);
       try {
         await SheetAPI.syncSettings(targetUrl, {
-          eventTitle: title ?? bingoTitle,
-          eventSubtitle: subtitle ?? bingoSubtitle,
-          cardPrice: price ?? cardPrice,
-          sheetUrl: targetUrl
+          eventTitle: newTitle,
+          eventSubtitle: newSubtitle,
+          cardPrice: newPrice,
+          sheetUrl: targetUrl,
+          gameState: JSON.stringify(gameState),
+          winners: JSON.stringify(winners),
+          prizes: JSON.stringify(prizes)
         });
-        showToast('Configuración guardada en la nube', 'success');
-        addLog("Configuración sincronizada con la nube");
+        if (!silent) showToast('Configuración y Estado guardados en la nube', 'success');
       } catch (e) {
         console.error("Error sync settings:", e);
       } finally {
-        setIsSyncing(false);
+        if (!silent) setIsSyncing(false);
       }
     }
   };
+
+  // Efecto para auto-push de cambios importantes (solo si ya se sincronizó una vez con la nube)
+  useEffect(() => {
+    if (hasInitialCloudSync && autoSync && isAuthenticated) {
+      // Debounce simple o simplemente disparar el sync de settings que ahora incluye todo
+      const timer = setTimeout(() => {
+        handleSaveSettings(undefined, undefined, undefined, undefined, true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.drawnBalls, gameState.isPaused, gameState.selectedPattern, winners, prizes]);
 
   useEffect(() => {
     const handleFullScreenChange = () => {
@@ -390,7 +444,7 @@ const App: React.FC = () => {
     syncToCloud('save', newParticipant);
 
     const successActions: AlertAction[] = [];
-    
+
     // WhatsApp button (Primary action)
     successActions.push({
       label: 'Compartir cartones a WhatsApp',
@@ -938,12 +992,12 @@ const App: React.FC = () => {
       const cardIds = p.cards.map(c => `#${c.id}`).join(', ');
       message = `Hola ${p.name}, estos son tus ${p.cards.length} cartones: ${cardIds}, para jugar en Bingo Virtual. ¡Buena suerte!`;
     }
-    
+
     const phone = p.phone.replace(/\D/g, '');
-    
+
     // Use wa.me API which automatically detects mobile app or desktop browser
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    
+
     // Open in a new tab/window
     window.open(url, '_blank');
   };
@@ -953,15 +1007,15 @@ const App: React.FC = () => {
       showAlert({ title: 'Sin teléfono', message: 'El participante no tiene un número de teléfono registrado.', type: 'warning' });
       return;
     }
-    
+
     await generateBingoCardsPDF(p, bingoTitle, bingoSubtitle);
-    
+
     const message = `Hola ${p.name}, adjuntamos tus cartones para jugar en Bingo Virtual,\nBuena suerte! 🍀`;
     const phone = p.phone.replace(/\D/g, '');
-    
+
     // Use wa.me API which automatically detects mobile app or desktop browser
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    
+
     window.open(url, '_blank');
   };
 
@@ -1019,7 +1073,7 @@ const App: React.FC = () => {
   // --- MAIN APP ---
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col relative">
-      <ManagementMenu 
+      <ManagementMenu
         isOpen={showManagementMenu}
         onClose={() => setShowManagementMenu(false)}
         onOpenModal={(modal) => setActiveManagementModal(modal)}
@@ -1031,7 +1085,7 @@ const App: React.FC = () => {
       />
 
       {/* Participants Side Drawer */}
-      <div 
+      <div
         className={`fixed top-0 right-0 h-full bg-slate-900 border-l border-slate-800 shadow-2xl z-[100] transition-all duration-500 ease-in-out ${isParticipantsDrawerOpen ? 'w-full md:w-1/3 translate-x-0' : 'w-0 translate-x-full'}`}
       >
         {isParticipantsDrawerOpen && (
@@ -1071,14 +1125,14 @@ const App: React.FC = () => {
 
       {/* Overlay for Drawer */}
       {isParticipantsDrawerOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[95] md:hidden"
           onClick={() => setIsParticipantsDrawerOpen(false)}
         />
       )}
 
-      <Modal 
-        isOpen={activeManagementModal === 'register'} 
+      <Modal
+        isOpen={activeManagementModal === 'register'}
         onClose={() => setActiveManagementModal('none')}
         maxWidth="max-w-xl"
         noPadding
@@ -1095,8 +1149,8 @@ const App: React.FC = () => {
         />
       </Modal>
 
-      <Modal 
-        isOpen={activeManagementModal === 'prizes'} 
+      <Modal
+        isOpen={activeManagementModal === 'prizes'}
         onClose={() => setActiveManagementModal('none')}
         maxWidth="max-w-xl"
         noPadding
@@ -1111,8 +1165,8 @@ const App: React.FC = () => {
         />
       </Modal>
 
-      <Modal 
-        isOpen={activeManagementModal === 'participants'} 
+      <Modal
+        isOpen={activeManagementModal === 'participants'}
         onClose={() => setActiveManagementModal('none')}
         maxWidth="max-w-4xl"
         noPadding
@@ -1270,7 +1324,7 @@ const App: React.FC = () => {
               <div className="h-px bg-slate-800 my-1"></div>
               {sheetUrl && (
                 <button
-                  onClick={() => { if(!isSyncing) loadFromCloud(false); }}
+                  onClick={() => { if (!isSyncing) loadFromCloud(false); }}
                   disabled={isSyncing}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg border w-full transition-all ${isSyncing ? 'bg-amber-900/40 text-amber-400 border-amber-500/50' : 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 border-slate-700'}`}
                 >

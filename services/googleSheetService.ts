@@ -85,7 +85,8 @@ export const SheetAPI = {
 
   async fetchAll(url: string): Promise<ApiResponse> {
     try {
-      const endpoint = `${url}?action=read`;
+      // Usar timestamp para evitar caché del navegador
+      const endpoint = `${url}?action=read&_t=${Date.now()}`;
       const response = await fetch(endpoint);
       const json = await response.json();
       
@@ -118,7 +119,8 @@ export const SheetAPI = {
 
   async fetchSettings(url: string): Promise<ApiResponse> {
     try {
-      const endpoint = `${url}?action=read_settings`;
+      // Usar timestamp para evitar caché
+      const endpoint = `${url}?action=read_settings&_t=${Date.now()}`;
       const response = await fetch(endpoint);
       const json = await response.json();
       return json;
