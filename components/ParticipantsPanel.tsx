@@ -21,6 +21,7 @@ interface Props {
   onShareCard?: (participant: Participant, cardId: string) => void;
   onShareAllCards?: (participant: Participant) => void;
   onRetireCard: (participantId: string, cardId: string) => void;
+  onIncludeCard: (participantId: string, cardId: string) => void;
   prizes?: Prize[];
   totalCards?: number;
   onClose: () => void;
@@ -41,6 +42,7 @@ const ParticipantsPanel: React.FC<Props> = ({
   onShareCard,
   onShareAllCards,
   onRetireCard,
+  onIncludeCard,
   prizes = [],
   totalCards = 0,
   onClose,
@@ -146,6 +148,7 @@ const ParticipantsPanel: React.FC<Props> = ({
           onDownloadCard={onDownloadCard}
           onShareCard={onShareCard ? (cardId) => onShareCard(viewingWinnerData.participant, cardId) : undefined}
           onRetireCard={onRetireCard}
+          onIncludeCard={onIncludeCard}
           prizes={prizes}
           allWinners={winners}
         />

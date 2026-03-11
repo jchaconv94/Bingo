@@ -73,6 +73,7 @@ export interface GameState {
   roundLocked?: boolean;
   gameRound: number; // Tracks the current round sequence (increments on partial reset)
   isPaused: boolean; // New: allows admin actions during a game
+  pendingWinners?: Winner[]; // New: winners that should be shown on all devices
 }
 
 export const TOTAL_BALLS = 75;

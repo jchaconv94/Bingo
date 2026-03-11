@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, User, Calendar, Hash, Trophy, Gift, Users, Divide, Ban } from 'lucide-react';
 import { Participant, Winner, BingoCard as BingoCardType, PatternKey, Prize } from '../types.ts';
@@ -16,6 +16,7 @@ interface Props {
   onDownloadCard: (participant: Participant, cardId: string) => void;
   onShareCard?: (cardId: string) => void;
   onRetireCard: (participantId: string, cardId: string) => void;
+  onIncludeCard: (participantId: string, cardId: string) => void;
   prizes?: Prize[];
   allWinners?: Winner[];
 }
@@ -31,6 +32,7 @@ const WinnerDetailsModal: React.FC<Props> = ({
   onDownloadCard,
   onShareCard,
   onRetireCard,
+  onIncludeCard,
   prizes = [],
   allWinners = []
 }) => {
@@ -86,6 +88,27 @@ const WinnerDetailsModal: React.FC<Props> = ({
   // VALIDAR SI EL CARTÓN EXISTE EN VIVO
   // Si el cartón ya no está en la lista del participante, asumimos que es un Snapshot (eliminado).
   const isLiveCard = participant.cards.some(c => c.id === card.id);
+
+  const [isRetiring, setIsRetiring] = useState(false);
+
+  const handleToggle = async () => {
+    setIsRetiring(true);
+    try {
+        if (card.isRetired) {
+            if (typeof onIncludeCard === 'function') {
+                await onIncludeCard(participant.id, card.id);
+            } else {
+                console.error('onIncludeCard is not a function', onIncludeCard);
+            }
+        } else {
+            await onRetireCard(participant.id, card.id);
+        }
+    } catch (error) {
+        console.error('Error toggling card retirement:', error);
+    } finally {
+        setIsRetiring(false);
+    }
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -237,11 +260,12 @@ const WinnerDetailsModal: React.FC<Props> = ({
         {/* Footer */}
         <div className="bg-slate-950/50 px-6 py-4 border-t border-slate-800 flex justify-end items-center gap-4">
           <button
-            onClick={() => onRetireCard(participant.id, card.id)}
-            className="flex items-center gap-2 bg-rose-900/50 hover:bg-rose-800 text-rose-200 border border-rose-700 rounded-lg px-4 py-2 text-sm font-bold uppercase tracking-wider transition-colors"
+            onClick={handleToggle}
+            disabled={isRetiring}
+            className={`flex items-center gap-2 ${card.isRetired ? 'bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 border border-emerald-700' : 'bg-rose-900/50 hover:bg-rose-800 text-rose-200 border border-rose-700'} rounded-lg px-4 py-2 text-sm font-bold uppercase tracking-wider transition-colors ${isRetiring ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <Ban size={16} />
-            RETIRAR CARTÓN DEL JUEGO
+            {isRetiring ? (card.isRetired ? 'INCLUYENDO...' : 'RETIRANDO...') : (card.isRetired ? 'INCLUIR AL JUEGO' : 'RETIRAR CARTÓN DEL JUEGO')}
           </button>
         </div>
 

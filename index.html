@@ -17,18 +17,16 @@
       }
       /* Custom scrollbar for dark theme */
       ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+        display: none;
       }
-      ::-webkit-scrollbar-track {
-        background: #0f172a; 
+      * {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
       }
-      ::-webkit-scrollbar-thumb {
-        background: #334155; 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #475569; 
+      
+      @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
       }
     </style>
   <script type="importmap">

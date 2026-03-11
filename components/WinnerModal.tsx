@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Sparkles, Check, Eye, Hash, UserX } from 'lucide-react';
+import { Trophy, Sparkles, Check, Eye, Hash, UserX, Ticket } from 'lucide-react';
 import { Winner } from '../types.ts';
 import { useAlert } from '../contexts/AlertContext.tsx';
 
@@ -66,40 +66,60 @@ const WinnerModal: React.FC<Props> = ({ winners, onClose, onViewDetails, onConfi
           </div>
 
           <div className="p-6 pt-2 overflow-y-auto custom-scrollbar flex-1">
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar py-2">
               {winners.map((w, idx) => (
                 <div 
                   key={idx} 
-                  className="bg-slate-900/80 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between group hover:border-amber-500/60 transition-colors"
+                  className="bg-[#0f172a] border border-slate-800/50 rounded-xl flex items-stretch overflow-hidden hover:border-slate-700 transition-all group"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-amber-900/40 ring-2 ring-amber-500/50">
-                      {idx + 1}
+                  {/* Badge de Premio (Izquierda) */}
+                  <div className="w-24 flex-shrink-0 bg-gradient-to-b from-amber-400 to-orange-500 p-3 flex flex-col items-center justify-center gap-0.5">
+                    <span className="text-[9px] font-black text-black/60 uppercase leading-none">PREMIO</span>
+                    <span className="text-sm font-black text-black leading-none text-center">
+                      {w.prizeDescription || w.prizeName || 'Bingo'}
+                    </span>
+                  </div>
+
+                  {/* Contenido Central */}
+                  <div className="flex-1 p-4 flex flex-col justify-center min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <h4 className="text-white font-bold text-base truncate tracking-tight">
+                        {w.participantName}
+                      </h4>
+                      <span className="text-[10px] text-slate-500 font-medium">
+                        {new Date(w.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                    <div>
-                      <h3 className="text-white font-bold leading-tight">{w.participantName}</h3>
-                      <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
-                        <span className="flex items-center gap-1"><Hash size={10} /> Cartón: <span className="text-emerald-400 font-mono">{w.cardId}</span></span>
-                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Bolilla: <span className="text-amber-400 font-bold">{w.winningNumber}</span></span>
+
+                    <div className="flex items-center gap-3">
+                      <div className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 flex items-center gap-2">
+                        <Ticket size={12} className="text-emerald-500/70" />
+                        <span className="text-[11px] font-mono text-emerald-400 font-bold">{w.cardId}</span>
+                      </div>
+                      <div className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full bg-amber-500 text-[9px] flex items-center justify-center text-black font-black">
+                          {w.winningNumber}
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Bolilla</span>
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleReject(w)}
-                      className="p-2 bg-slate-800 hover:bg-rose-950/50 text-slate-400 hover:text-rose-400 rounded-lg border border-slate-700 hover:border-rose-500/50 transition-all"
-                      title="INVALIDAR GANADOR (Borra ganador)"
-                    >
-                      <UserX size={20} />
-                    </button>
 
+                  {/* Botones de Acción (Derecha) */}
+                  <div className="flex-shrink-0 flex items-center gap-2 pr-4">
                     <button
                       onClick={() => onViewDetails(w)}
-                      className="p-2 bg-slate-800 hover:bg-cyan-900/50 text-slate-400 hover:text-cyan-400 rounded-lg border border-slate-700 hover:border-cyan-500/50 transition-all"
-                      title="Ver cartón completo"
+                      className="w-10 h-10 rounded-xl bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-500 hover:bg-cyan-500/10 hover:text-cyan-500 hover:border-cyan-500/30 transition-all"
+                      title="Ver detalles"
                     >
-                      <Eye size={20} />
+                      <Eye size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleReject(w)}
+                      className="w-10 h-10 rounded-xl bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-500 hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/30 transition-all"
+                      title="Invalidar"
+                    >
+                      <UserX size={18} />
                     </button>
                   </div>
                 </div>

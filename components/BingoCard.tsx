@@ -38,8 +38,8 @@ const BingoCard: React.FC<Props> = ({
   const patternIndices = WIN_PATTERNS[currentPattern].indices;
 
   // Calculate if this card is a winner based on the pattern
-  // IMPORTANT: If invalid, it's never a winner
-  const isWinner = !isInvalid && patternIndices.length > 0 && patternIndices.every(idx => {
+  // Note: We allow retired cards to show as winners if they match the pattern
+  const isWinner = !card.isInvalid && patternIndices.length > 0 && patternIndices.every(idx => {
     const val = card.numbers[idx];
     return val === 0 || drawnBalls.includes(val);
   });
@@ -104,7 +104,7 @@ const BingoCard: React.FC<Props> = ({
                 WINNER
               </div>
             )}
-            {isInvalid && (
+            {isInvalid && !isWinner && (
                <div className={`font-black uppercase bg-rose-900 text-rose-400 rounded px-1 ${isPanelVariant ? 'text-[5px] py-0' : isCompact ? 'text-[7px] py-0.5' : 'text-xs py-0.5'}`}>
                   VOID
                </div>

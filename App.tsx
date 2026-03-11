@@ -93,7 +93,8 @@ const App: React.FC = () => {
       selectedPattern: 'NONE' as PatternKey,
       roundLocked: false,
       gameRound: 1,
-      isPaused: false
+      isPaused: false,
+      pendingWinners: []
     };
     const loaded = loadFromStorage(LS_KEYS.GAME_STATE, defaults);
     return { ...defaults, ...loaded, isPaused: loaded.isPaused || false };
@@ -214,7 +215,6 @@ const App: React.FC = () => {
       const result = await SheetAPI.fetchAll(sheetUrl);
       if (result.success && Array.isArray(result.data)) {
         const cloudData = result.data;
-        console.log("loadFromCloud: Fetched data", cloudData);
         const reversedData = [...cloudData].reverse();
         setParticipants(prev => {
           if (syncLockRef.current.participants) return prev;
@@ -254,9 +254,18 @@ const App: React.FC = () => {
               if (prev.drawnBalls.join(',') === (cloudGS.drawnBalls || []).join(',') && 
                   prev.selectedPattern === cloudGS.selectedPattern && 
                   prev.gameRound === cloudGS.gameRound && 
-                  prev.isPaused === cloudGS.isPaused) {
+                  prev.isPaused === cloudGS.isPaused &&
+                  JSON.stringify(prev.pendingWinners || []) === JSON.stringify(cloudGS.pendingWinners || [])) {
                 return prev; 
               }
+
+              // Sincronizar ganadores pendientes para mostrar el modal en todos los dispositivos
+              if (cloudGS.pendingWinners && JSON.stringify(cloudGS.pendingWinners) !== JSON.stringify(currentBatchWinners)) {
+                setCurrentBatchWinners(cloudGS.pendingWinners);
+              } else if (!cloudGS.pendingWinners && currentBatchWinners.length > 0) {
+                setCurrentBatchWinners([]);
+              }
+
               // Marca para omitir subida inútil a la nube porque los datos acaban de bajar de allí
               skipSyncRef.current.gameState = true;
               return { ...cloudGS, lastCardSequence: prev.lastCardSequence };
@@ -381,7 +390,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (skipSyncRef.current.gameState) { skipSyncRef.current.gameState = false; return; }
     if (autoSync) pushPartialToCloud('gameState', gameState);
-  }, [gameState.drawnBalls.length, gameState.isPaused, gameState.selectedPattern, gameState.gameRound, gameState.roundLocked]);
+  }, [gameState.drawnBalls.length, gameState.isPaused, gameState.selectedPattern, gameState.gameRound, gameState.roundLocked, gameState.pendingWinners?.length]);
 
   useEffect(() => {
     if (skipSyncRef.current.winners) { skipSyncRef.current.winners = false; return; }
@@ -782,6 +791,12 @@ const App: React.FC = () => {
 
       setWinners(prev => [...prev, ...finalWinners]);
       setCurrentBatchWinners(finalWinners);
+      
+      // Sincronizar ganadores pendientes a la nube para que aparezcan en otros dispositivos
+      setGameState(prev => ({
+        ...prev,
+        pendingWinners: finalWinners
+      }));
 
       finalWinners.forEach(w => addLog(`🏆 BINGO DETECTADO: ${w.participantName} (${w.cardId})`));
 
@@ -801,7 +816,8 @@ const App: React.FC = () => {
       history: [...prev.history, "✅ Ronda Confirmada. Preparando siguiente juego."],
       selectedPattern: 'NONE',
       roundLocked: false,
-      gameRound: prev.gameRound + 1
+      gameRound: prev.gameRound + 1,
+      pendingWinners: []
     }));
     setCurrentBatchWinners([]);
     addLog("✅ Sorteo continuado. Bolillas reseteadas.");
@@ -836,6 +852,10 @@ const App: React.FC = () => {
 
     if (remainingInBatch.length > 0) {
       setCurrentBatchWinners(remainingInBatch);
+      setGameState(prev => ({
+        ...prev,
+        pendingWinners: remainingInBatch
+      }));
       addLog(`⚠️ Ganador invalidado: ${invalidWinner.participantName} (Cartón ${invalidWinner.cardId} ANULADO).`);
     } else {
       if (invalidWinner.prizeId) {
@@ -848,7 +868,8 @@ const App: React.FC = () => {
       setGameState(prev => ({
         ...prev,
         history: [...prev.history, `🚫 Ganador invalidado: ${invalidWinner.participantName}. Cartón ${invalidWinner.cardId} ANULADO.`],
-        roundLocked: false
+        roundLocked: false,
+        pendingWinners: []
       }));
       setCurrentBatchWinners([]);
       addLog("⚠️ Ganador invalidado. Sorteo reanudado.");
@@ -857,30 +878,103 @@ const App: React.FC = () => {
 
   const handleRetireCard = async (participantId: string, cardId: string) => {
     syncLockRef.current.participants = true;
-    let updatedParticipant: Participant | null = null;
-    setParticipants(prev => prev.map(p => {
-      if (p.id === participantId) {
-        updatedParticipant = {
-          ...p,
-          cards: p.cards.map(c => c.id === cardId ? { ...c, isRetired: true } : c)
-        };
-        return updatedParticipant;
-      }
-      return p;
-    }));
     
-    if (updatedParticipant) {
-      await syncToCloud('save', updatedParticipant);
-      await loadFromCloud(false);
+    const participant = participants.find(p => p.id === participantId);
+    if (!participant) {
+      syncLockRef.current.participants = false;
+      return;
     }
     
-    syncLockRef.current.participants = false;
-    setViewingDetailsData(null);
-    showAlert({ title: 'Cartón Retirado', message: 'El cartón ha sido retirado del juego exitosamente.', type: 'success' });
+    const cardToUpdate = participant.cards.find(c => c.id === cardId);
+    if (!cardToUpdate) {
+      syncLockRef.current.participants = false;
+      return;
+    }
+
+    const updatedCard = { ...cardToUpdate, isRetired: true };
+    const updatedParticipant = {
+      ...participant,
+      cards: participant.cards.map(c => c.id === cardId ? updatedCard : c)
+    };
+
+    // Update local state immediately
+    setParticipants(prev => prev.map(p => p.id === participantId ? updatedParticipant : p));
+    
+    // Update modal state immediately for reactivity
+    setViewingDetailsData(prev => prev ? {
+      ...prev,
+      card: updatedCard
+    } : null);
+
+    // Perform sync in background to not block UI
+    const syncProcess = async () => {
+      try {
+        await syncToCloud('save', updatedParticipant);
+        syncLockRef.current.participants = false;
+        await loadFromCloud(false);
+      } catch (e) {
+        console.error("Background sync error:", e);
+        syncLockRef.current.participants = false;
+      }
+    };
+    
+    syncProcess();
+    showToast('El cartón ha sido retirado del juego exitosamente.', 'success');
+  };
+
+  const handleIncludeCard = async (participantId: string, cardId: string) => {
+    syncLockRef.current.participants = true;
+    
+    const participant = participants.find(p => p.id === participantId);
+    if (!participant) {
+      syncLockRef.current.participants = false;
+      return;
+    }
+    
+    const cardToUpdate = participant.cards.find(c => c.id === cardId);
+    if (!cardToUpdate) {
+      syncLockRef.current.participants = false;
+      return;
+    }
+
+    const { isRetired, ...rest } = cardToUpdate;
+    const updatedCard = rest as BingoCard;
+    const updatedParticipant = {
+      ...participant,
+      cards: participant.cards.map(c => c.id === cardId ? updatedCard : c)
+    };
+
+    // Update local state immediately
+    setParticipants(prev => prev.map(p => p.id === participantId ? updatedParticipant : p));
+    
+    // Update modal state immediately for reactivity
+    setViewingDetailsData(prev => prev ? {
+      ...prev,
+      card: updatedCard
+    } : null);
+
+    // Perform sync in background to not block UI
+    const syncProcess = async () => {
+      try {
+        await syncToCloud('save', updatedParticipant);
+        syncLockRef.current.participants = false;
+        await loadFromCloud(false);
+      } catch (e) {
+        console.error("Background sync error:", e);
+        syncLockRef.current.participants = false;
+      }
+    };
+    
+    syncProcess();
+    showToast('El cartón ha sido incluido en el juego exitosamente.', 'success');
   };
 
   const handleCloseWinnerModal = () => {
     setCurrentBatchWinners([]);
+    setGameState(prev => ({
+      ...prev,
+      pendingWinners: []
+    }));
   };
 
   const handleViewDetailsFromSummary = (winner: Winner) => {
@@ -921,7 +1015,8 @@ const App: React.FC = () => {
         selectedPattern: 'NONE',
         roundLocked: false,
         gameRound: prev.gameRound + 1,
-        isPaused: false
+        isPaused: false,
+        pendingWinners: []
       }));
       setCurrentBatchWinners([]);
       return;
@@ -943,7 +1038,8 @@ const App: React.FC = () => {
       selectedPattern: 'NONE',
       roundLocked: false,
       gameRound: 1,
-      isPaused: false
+      isPaused: false,
+      pendingWinners: []
     }));
     setWinners([]);
     setCurrentBatchWinners([]);
@@ -1170,6 +1266,7 @@ const App: React.FC = () => {
               onShareCard={handleShareCard}
               onShareAllCards={handleShareAllCards}
               onRetireCard={handleRetireCard}
+              onIncludeCard={handleIncludeCard}
               prizes={prizes}
               totalCards={totalCards}
               variant="drawer"
@@ -1253,6 +1350,7 @@ const App: React.FC = () => {
           onShareCard={handleShareCard}
           onShareAllCards={handleShareAllCards}
           onRetireCard={handleRetireCard}
+          onIncludeCard={handleIncludeCard}
           prizes={prizes}
           totalCards={totalCards}
           onClose={() => setActiveManagementModal('none')}
@@ -1324,6 +1422,7 @@ const App: React.FC = () => {
           onDownloadCard={handleDownloadCard}
           onShareCard={(cardId) => handleShareCard(viewingDetailsData.participant, cardId)}
           onRetireCard={() => handleRetireCard(viewingDetailsData.participant.id, viewingDetailsData.card.id)}
+          onIncludeCard={() => handleIncludeCard(viewingDetailsData.participant.id, viewingDetailsData.card.id)}
           prizes={prizes}
           allWinners={winners}
         />

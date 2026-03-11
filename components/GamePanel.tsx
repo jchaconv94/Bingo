@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, RotateCcw, Trophy, Hash, History, LayoutGrid, Eye, X, Star, Gift, CheckCircle, Circle, PauseCircle, PlayCircle, Lock } from 'lucide-react';
+import { Play, RotateCcw, Trophy, Hash, History, LayoutGrid, Eye, X, Star, Gift, CheckCircle, Circle, PauseCircle, PlayCircle, Lock, Ticket } from 'lucide-react';
 import { PatternKey, WinPattern, Prize, Winner } from '../types.ts';
 import { WIN_PATTERNS } from '../utils/helpers.ts';
 
@@ -492,62 +492,78 @@ const GamePanel: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Lista de Ganadores (Derecha) */}
+          {/* Lista de Ganadores (Derecha) - DISEÑO COMPACTO SEGÚN REFERENCIA */}
           {winners.length > 0 && (
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-80 xl:w-96 hidden lg:flex flex-col gap-3 max-h-[80%] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pr-2 pl-3 py-2">
-              <div className="flex items-center gap-2 mb-1 px-1">
-                <Trophy className="text-amber-400" size={16} />
-                <div className="text-[11px] font-black text-amber-400 uppercase tracking-widest">
-                  GANADORES RECIENTES ({winners.length})
+            <div className="absolute right-0 top-0 bottom-0 z-20 w-80 xl:w-96 hidden lg:flex flex-col gap-0 py-4 pr-4 pl-2">
+              
+              {/* Header Compacto */}
+              <div className="flex items-center gap-3 px-4 py-3 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-t-2xl shadow-xl">
+                <div className="p-1.5 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                  <Trophy size={16} className="text-amber-500" />
+                </div>
+                <div className="flex flex-col">
+                  <h3 className="text-amber-500 text-xs font-black uppercase tracking-widest leading-none">Ganadores</h3>
+                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter mt-0.5">Recientes ({winners.length})</span>
+                </div>
+                <div className="ml-auto flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span className="text-[9px] font-black text-emerald-500 uppercase">En Vivo</span>
                 </div>
               </div>
-              {[...winners].reverse().slice(0, 5).map((winner, idx) => {
-                // Find prize info if available
-                const prize = prizes.find(p => p.isAwarded); // Simplificación
-                return (
-                  <div
+              
+              {/* Listado de Ganadores Compacto */}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar pb-10 bg-slate-950/20 border-x border-b border-slate-800/50 rounded-b-2xl pt-3 px-2">
+                {[...winners].reverse().slice(0, 15).map((winner, idx) => (
+                  <div 
                     key={`${winner.participantId}-${winner.cardId}-${idx}`}
                     onClick={() => onViewWinner && onViewWinner(winner)}
-                    className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 shadow-lg backdrop-blur-sm transition-all hover:border-amber-500/30 group cursor-pointer"
+                    className="bg-[#0f172a] border border-slate-800/50 rounded-xl flex items-stretch overflow-hidden hover:border-slate-700 transition-all cursor-pointer group"
                   >
-                    <div className="flex items-center gap-3">
-                      {/* Premio */}
-                      <div className="flex-shrink-0 w-16 h-14 bg-gradient-to-b from-amber-400 to-amber-600 rounded-lg flex flex-col items-center justify-center text-slate-950 p-1">
-                        <div className="text-[8px] font-bold uppercase opacity-80">Premio</div>
-                        <div className="text-xs font-black">S/ 50.00</div>
-                      </div>
-                      
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold text-white truncate mb-1">
+                    {/* Badge de Premio (Izquierda) */}
+                    <div className="w-20 flex-shrink-0 bg-gradient-to-b from-amber-400 to-orange-500 p-2 flex flex-col items-center justify-center gap-0.5">
+                      <span className="text-[8px] font-black text-black/60 uppercase leading-none">PREMIO</span>
+                      <span className="text-xs font-black text-black leading-none text-center">
+                        {winner.prizeDescription || winner.prizeName || 'Bingo'}
+                      </span>
+                    </div>
+
+                    {/* Contenido Central */}
+                    <div className="flex-1 p-3 flex flex-col justify-center min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <h4 className="text-white font-bold text-[13px] truncate tracking-tight">
                           {winner.participantName}
+                        </h4>
+                        <span className="text-[9px] text-slate-500 font-medium">
+                          {new Date(winner.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 flex items-center gap-1.5">
+                          <Ticket size={10} className="text-emerald-500/70" />
+                          <span className="text-[10px] font-mono text-emerald-400 font-bold">{winner.cardId}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[10px] text-emerald-400 font-mono">
-                            Cartón: {winner.cardId}
+                        <div className="px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 flex items-center gap-1.5">
+                          <div className="w-3.5 h-3.5 rounded-full bg-amber-500 text-[8px] flex items-center justify-center text-black font-black">
+                            {winner.winningNumber}
                           </div>
-                          <div className="bg-amber-950/50 border border-amber-900 rounded px-2 py-0.5 text-[10px] text-amber-400 font-mono flex items-center gap-1">
-                            <span className="w-3 h-3 rounded-full bg-amber-500 text-[8px] flex items-center justify-center text-slate-950 font-bold">{winner.winningNumber}</span>
-                            Bolilla
-                          </div>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">Bolilla</span>
                         </div>
                       </div>
-                      
-                      {/* Ojo */}
-                      <div className="text-slate-600 group-hover:text-amber-400 transition-colors">
+                    </div>
+
+                    {/* Botón de Acción (Derecha) */}
+                    <div className="flex-shrink-0 flex items-center pr-3">
+                      <div className="w-8 h-8 rounded-lg bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-500 group-hover:bg-amber-500/10 group-hover:text-amber-500 group-hover:border-amber-500/30 transition-all">
                         <Eye size={16} />
                       </div>
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Pattern Mini Preview */}
-          <div className="absolute bottom-0 right-0 sm:right-4 text-xs sm:text-sm text-slate-400 font-bold bg-slate-950/90 px-3 py-1.5 rounded-full border border-slate-700 flex items-center gap-2 shadow-lg z-20">
-            <LayoutGrid size={14} /> {WIN_PATTERNS[currentPattern].label}
-          </div>
         </div>
 
         {/* Botones de Control */}
