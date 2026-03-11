@@ -79,12 +79,16 @@ const App: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [showLoginConnection, setShowLoginConnection] = useState(false);
 
-  // Ref para evitar solapamiento de peticiones en polling
+  // --- REFERENCIAS DE SINCRONIZACIÓN Y BLOQUEO MULTIDISPOSITIVO ---
   const isPollingRef = useRef(false);
   const isFirstLoadRef = useRef(true); 
-  const isSavingRef = useRef(false); 
-  const needsSyncRef = useRef(false); // Indica si hubo cambios mientras se guardaba
   const [hasInitialCloudSync, setHasInitialCloudSync] = useState(false);
+  
+  // Contadores para evitar que polling sobreescriba cambios locales
+  const syncLockRef = useRef({ gameState: false, winners: false, prizes: false, config: false });
+  // Banderas para ignorar eventos de autosync tras recibir un payload en la nube
+  const skipSyncRef = useRef({ gameState: false, winners: false, prizes: false });
+  const timersRef = useRef<{ [key: string]: NodeJS.Timeout | null }>({ gameState: null, winners: null, prizes: null, config: null });
 
   // --- State con Inicialización Perezosa ---
   const [participants, setParticipants] = useState<Participant[]>(() =>
@@ -249,87 +253,45 @@ const App: React.FC = () => {
         if (s.cardPrice) setCardPrice(Number(s.cardPrice));
         if (s.sheetUrl && s.sheetUrl !== sheetUrl) setSheetUrl(s.sheetUrl);
 
-        // --- MERGE DE GAME STATE ---
-        if (s.gameState) {
+        // --- 2. GAME STATE ---
+        if (s.gameState && !syncLockRef.current.gameState) {
           try {
             const cloudGS = typeof s.gameState === 'string' ? JSON.parse(s.gameState) : s.gameState;
             setGameState(prev => {
-              // 1. Si la ronda en la nube es 1 y nosotros estamos en >1, es un RESET TOTAL
-              const isMasterReset = cloudGS.gameRound === 1 && prev.gameRound > 1;
-              
-              // 2. Si la ronda es distinta (reset o avance), adoptamos todo de la nube
-              if (cloudGS.gameRound > prev.gameRound || isMasterReset) {
-                return { ...prev, ...cloudGS, lastCardSequence: prev.lastCardSequence };
-              }
-              
-              // 3. Si nosotros tenemos una ronda mayor local (y no es reset a 1), ignoramos nube
-              if (cloudGS.gameRound < prev.gameRound && !isMasterReset) return prev;
-
-              // 4. Misma ronda: Fusión de bolillas (Unión)
-              const cloudBalls = Array.isArray(cloudGS.drawnBalls) ? cloudGS.drawnBalls : [];
-              const mergedBalls = Array.from(new Set([...prev.drawnBalls, ...cloudBalls]));
-              
-              if (mergedBalls.length === prev.drawnBalls.length && 
-                  prev.selectedPattern === cloudGS.selectedPattern &&
+              // Bailout instantáneo si es igual para no renderizar
+              if (prev.drawnBalls.join(',') === (cloudGS.drawnBalls || []).join(',') && 
+                  prev.selectedPattern === cloudGS.selectedPattern && 
+                  prev.gameRound === cloudGS.gameRound && 
                   prev.isPaused === cloudGS.isPaused) {
-                return prev;
+                return prev; 
               }
-
-              return {
-                ...prev,
-                ...cloudGS,
-                drawnBalls: mergedBalls,
-                lastCardSequence: prev.lastCardSequence,
-                history: Array.from(new Set([...prev.history, ...(cloudGS.history || [])])).slice(-40)
-              };
+              // Marca para omitir subida inútil a la nube porque los datos acaban de bajar de allí
+              skipSyncRef.current.gameState = true;
+              return { ...cloudGS, lastCardSequence: prev.lastCardSequence };
             });
           } catch (e) { console.error("Sync GS Error:", e); }
         }
 
-        // Winners
-        if (s.winners) {
+        // --- 3. WINNERS ---
+        if (s.winners && !syncLockRef.current.winners) {
           try {
             const cloudWinners = typeof s.winners === 'string' ? JSON.parse(s.winners) : s.winners;
             setWinners(prev => {
-              const cloudList = Array.isArray(cloudWinners) ? cloudWinners : [];
-              
-              // Detectamos si debemos SOBREESCRIBIR (cuando hay cambio de ronda o reset)
-              // Usamos una variable auxiliar o simplemente confiamos en que si el gameState cambió,
-              // aquí también debemos ser cuidadosos.
-              // Para ser seguros: si la nube viene vacía y nosotros tenemos datos, 
-              // solo vaciamos si la ronda se reseteó a 1.
-              const isResetAction = s.gameState && JSON.parse(s.gameState).gameRound === 1;
-              
-              if (isResetAction) return cloudList; // Reset total
-              if (cloudList.length === 0 && prev.length > 0) return prev; // Evitar vaciado accidental
-              
-              const combined = [...prev];
-              cloudList.forEach((cw: any) => {
-                const uniqueId = `${cw.participantId}-${cw.cardId}-${cw.timestamp}`;
-                const exists = combined.some(w => `${w.participantId}-${w.cardId}-${w.timestamp}` === uniqueId);
-                if (!exists) combined.push(cw);
-              });
-              return combined.length !== prev.length ? combined : prev;
+              if (JSON.stringify(prev) === JSON.stringify(cloudWinners)) return prev; 
+              skipSyncRef.current.winners = true;
+              return cloudWinners;
             });
           } catch (e) { console.error("Sync Winners Error:", e); }
         }
 
-        // Prizes
-        if (s.prizes) {
+        // --- 4. PRIZES ---
+        if (s.prizes && !syncLockRef.current.prizes) {
           try {
             const cloudPrizes = typeof s.prizes === 'string' ? JSON.parse(s.prizes) : s.prizes;
             setPrizes(prev => {
-              const cloudList = Array.isArray(cloudPrizes) ? cloudPrizes : [];
-              const isResetAction = s.gameState && JSON.parse(s.gameState).gameRound === 1;
-              
-              if (isResetAction) {
-                return cloudList; // Reset total
-              }
-
-              if (cloudList.length === 0) return prev;
-              const cloudAwarded = cloudList.filter(p => p.isAwarded).length;
-              const localAwarded = prev.filter(p => p.isAwarded).length;
-              return cloudAwarded >= localAwarded ? cloudList : prev;
+              if (JSON.stringify(prev) === JSON.stringify(cloudPrizes)) return prev;
+              skipSyncRef.current.prizes = true;
+              return cloudPrizes;
             });
           } catch (e) { console.error("Sync Prizes Error:", e); }
         }
@@ -372,6 +334,34 @@ const App: React.FC = () => {
     }
   };
 
+  // Función para subir una porción específica del estado de forma atómica (Partial Push)
+  const pushPartialToCloud = async (key: 'gameState' | 'winners' | 'prizes' | 'config', value: any) => {
+    if (!sheetUrl || !isAuthenticated || !hasInitialCloudSync) return;
+    
+    if (timersRef.current[key]) clearTimeout(timersRef.current[key]!);
+    
+    // Bloqueamos la descarga (polling) para esta llave para evitar que la nube sobrescriba con datos viejos
+    syncLockRef.current[key] = true; 
+    setIsSyncing(true);
+
+    timersRef.current[key] = setTimeout(async () => {
+      try {
+        const payload: any = {};
+        if (key === 'config') {
+          Object.assign(payload, value); // { eventTitle, etc... }
+        } else {
+          payload[key] = typeof value === 'string' ? value : JSON.stringify(value);
+        }
+        await SheetAPI.syncSettings(sheetUrl, payload);
+      } catch (e) {
+        console.error(`Error partial sync ${key}:`, e);
+      } finally {
+        syncLockRef.current[key] = false;
+        setIsSyncing(false);
+      }
+    }, 600); // 600ms de reactividad, sin solapamientos
+  };
+
   const handleSaveSettings = async (title?: string, subtitle?: string, price?: number, url?: string, silent: boolean = false) => {
     const newTitle = title ?? bingoTitle;
     const newSubtitle = subtitle ?? bingoSubtitle;
@@ -383,50 +373,33 @@ const App: React.FC = () => {
     if (price !== undefined) setCardPrice(newPrice);
     if (url !== undefined) setSheetUrl(targetUrl);
     
-    if (targetUrl && (hasInitialCloudSync || url !== undefined)) {
-      if (isSavingRef.current) {
-        needsSyncRef.current = true;
-        return;
-      }
-      
-      isSavingRef.current = true;
-      needsSyncRef.current = false;
-      if (!silent) setIsSyncing(true);
-      
-      try {
-        await SheetAPI.syncSettings(targetUrl, {
-          eventTitle: newTitle,
-          eventSubtitle: newSubtitle,
-          cardPrice: newPrice,
-          sheetUrl: targetUrl,
-          gameState: JSON.stringify(gameState),
-          winners: JSON.stringify(winners),
-          prizes: JSON.stringify(prizes)
-        });
-        if (!silent) showToast('Datos sincronizados!', 'success');
-      } catch (e) {
-        console.error("Error sync settings:", e);
-      } finally {
-        isSavingRef.current = false;
-        if (!silent) setIsSyncing(false);
-        // Si hubo cambios mientras guardábamos, lanzamos otro sync al terminar
-        if (needsSyncRef.current) {
-          handleSaveSettings(undefined, undefined, undefined, undefined, true);
-        }
-      }
+    if (targetUrl) {
+      if (!silent) showToast('Guardando configuración...', 'info');
+      await pushPartialToCloud('config', {
+        eventTitle: newTitle,
+        eventSubtitle: newSubtitle,
+        cardPrice: newPrice,
+        sheetUrl: targetUrl
+      });
+      if (!silent) showToast('¡Ajustes guardados!', 'success');
     }
   };
 
-  // Efecto para auto-push de los sorteos y cambios de ganador
+  // --- EFECTOS DE AUTO-GUARDADO REACTIVO ---
   useEffect(() => {
-    // Solo disparamos si ya cargamos la nube inicialmente y estamos autenticados
-    if (autoSync && isAuthenticated && hasInitialCloudSync) {
-      const timer = setTimeout(() => {
-        handleSaveSettings(undefined, undefined, undefined, undefined, true);
-      }, 500); // 500ms tras el último cambio para máxima agilidad
-      return () => clearTimeout(timer);
-    }
-  }, [gameState.drawnBalls.length, gameState.isPaused, gameState.selectedPattern, winners.length, prizes]);
+    if (skipSyncRef.current.gameState) { skipSyncRef.current.gameState = false; return; }
+    if (autoSync) pushPartialToCloud('gameState', gameState);
+  }, [gameState.drawnBalls.length, gameState.isPaused, gameState.selectedPattern, gameState.gameRound, gameState.roundLocked]);
+
+  useEffect(() => {
+    if (skipSyncRef.current.winners) { skipSyncRef.current.winners = false; return; }
+    if (autoSync) pushPartialToCloud('winners', winners);
+  }, [winners.length]);
+
+  useEffect(() => {
+    if (skipSyncRef.current.prizes) { skipSyncRef.current.prizes = false; return; }
+    if (autoSync) pushPartialToCloud('prizes', prizes);
+  }, [prizes]);
 
   useEffect(() => {
     const handleFullScreenChange = () => {
