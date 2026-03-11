@@ -233,8 +233,8 @@ const generateBingoCardSVG = (participant: Participant, card: BingoCard, title: 
   <g transform="translate(${padding}, ${height - 80})">
     <line x1="0" y1="0" x2="${width - (padding*2)}" y2="0" stroke="#e2e8f0" stroke-width="2"/>
     <text x="0" y="35" font-size="16" font-weight="600" fill="#64748b">¡Mucha Suerte! 🍀</text>
-    <text x="${width - (padding*2)}" y="25" font-size="16" font-weight="800" fill="#0f172a" text-anchor="end">Sistema de Bingo Virtual</text>
-    <text x="${width - (padding*2)}" y="45" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="end">Generado automáticamente</text>
+    <text x="${width - (padding*2)}" y="25" font-size="16" font-weight="800" fill="#0f172a" text-anchor="end">App de Bingo Virtual</text>
+    <text x="${width - (padding*2)}" y="45" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="end">By Ing. Jordan CV</text>
   </g>
 </svg>`;
 
