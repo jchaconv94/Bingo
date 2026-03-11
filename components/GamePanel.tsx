@@ -360,9 +360,18 @@ const GamePanel: React.FC<Props> = ({
           {/* Lista de Premios (Izquierda) */}
           {prizes.length > 0 && (
             <div className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-64 xl:w-80 hidden lg:flex flex-col gap-3 max-h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pl-2 pr-3 py-2">
-              {prizes.map((prize, idx) => {
-                const previousWon = idx === 0 || prizes[idx - 1].isAwarded;
-                const isNext = !prize.isAwarded && previousWon;
+              {/* To display the prizes keeping their original sequence but pushing Awarded down, we create an array of mapped objects. */}
+              {prizes.map((p, idx) => ({ ...p, originalIndex: idx }))
+                .sort((a, b) => {
+                  if (a.isAwarded && !b.isAwarded) return 1;
+                  if (!a.isAwarded && b.isAwarded) return -1;
+                  return a.originalIndex - b.originalIndex;
+                })
+                .map((prize) => {
+                // To determine if a prize is the "next" actively playing prize, we need to check its status
+                // based on the ORIGINAL prizes array order.
+                const activePrizeIndex = prizes.findIndex(p => !p.isAwarded);
+                const isNext = prize.originalIndex === activePrizeIndex;
                 const textLen = prize.description.length;
                 let dynamicFontSize = 'text-lg';
                 if (isNext) {
@@ -385,14 +394,14 @@ const GamePanel: React.FC<Props> = ({
                         ? 'bg-slate-900 border border-emerald-900/50 opacity-70 hover:opacity-100 grayscale-[0.3]'
                         : isNext
                           ? 'bg-gradient-to-br from-amber-500 to-orange-600 border-2 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.35)] scale-105 z-10 ring-4 ring-amber-500/10'
-                          : 'bg-slate-900/50 border border-slate-800 opacity-50'
+                          : 'bg-slate-900/50 border border-slate-800 opacity-50 hover:bg-slate-800'
                       }
                       `}
                   >
                     <div className="p-3 flex items-center gap-3 relative overflow-hidden">
                       <div className={`
                              flex-shrink-0 flex items-center justify-center rounded-lg backdrop-blur-md shadow-inner
-                             ${isNext ? 'w-14 h-14 bg-white/20 text-white' : prize.isAwarded ? 'w-10 h-10 bg-emerald-950 text-emerald-500' : 'w-8 h-8 bg-slate-800 text-slate-600'}
+                             ${isNext ? 'w-14 h-14 bg-white/20 text-white' : prize.isAwarded ? 'w-10 h-10 bg-emerald-950 text-emerald-500' : 'w-8 h-8 bg-slate-800 text-slate-400'}
                           `}>
                         {prize.isAwarded ? <CheckCircle size={20} /> : <Gift size={isNext ? 32 : 20} />}
                       </div>
@@ -402,7 +411,7 @@ const GamePanel: React.FC<Props> = ({
                         <div className={`text-[10px] uppercase font-bold tracking-wide leading-none mb-1 ${isNext ? 'text-white/90' : 'text-slate-400'}`}>
                           {prize.name}
                         </div>
-                        <div className={`font-black leading-none whitespace-nowrap ${dynamicFontSize} tracking-tight ${isNext ? 'text-white drop-shadow-sm' : prize.isAwarded ? 'text-slate-500 line-through' : 'text-slate-500'}`}>
+                        <div className={`font-black leading-none whitespace-nowrap ${dynamicFontSize} tracking-tight ${isNext ? 'text-white drop-shadow-sm' : prize.isAwarded ? 'text-slate-500 line-through' : 'text-slate-300'}`}>
                           {prize.description}
                         </div>
                       </div>
