@@ -78,6 +78,7 @@ const App: React.FC = () => {
   // Ref para evitar solapamiento de peticiones en polling
   const isPollingRef = useRef(false);
   const isFirstLoadRef = useRef(true); // Para saber si es el primer render
+  const isSavingRef = useRef(false); // Ref para evitar solapamientos de auto-save
   const [hasInitialCloudSync, setHasInitialCloudSync] = useState(false);
 
   // --- State con Inicialización Perezosa ---
@@ -232,55 +233,85 @@ const App: React.FC = () => {
         });
       }
 
-      // 2. Fetch Settings & Full Game State
+      // 2. Fetch Settings & Full Game State (Balls, Winners, Prizes)
       const settingsResult = await SheetAPI.fetchSettings(sheetUrl);
       if (settingsResult.success && settingsResult.settings) {
         const s = settingsResult.settings;
-
+        
         // Settings Básicos
         if (s.eventTitle) setBingoTitle(s.eventTitle);
         if (s.eventSubtitle) setBingoSubtitle(s.eventSubtitle);
         if (s.cardPrice) setCardPrice(Number(s.cardPrice));
         if (s.sheetUrl && s.sheetUrl !== sheetUrl) setSheetUrl(s.sheetUrl);
 
-        // Game State (Balls, History, Pattern, etc.)
+        // --- MERGE INTELIGENTE DE GAME STATE ---
         if (s.gameState) {
           try {
             const cloudGS = typeof s.gameState === 'string' ? JSON.parse(s.gameState) : s.gameState;
             setGameState(prev => {
-              // Fusionar con cuidado para no perder lastCardSequence local si es mayor
-              const merged = { ...prev, ...cloudGS };
-              if (prev.lastCardSequence > merged.lastCardSequence) {
-                merged.lastCardSequence = prev.lastCardSequence;
+              // 1. Si la nube tiene una ronda mayor, es un reseteo o avance de fase -> Adoptar todo
+              if (cloudGS.gameRound > prev.gameRound) {
+                return { ...prev, ...cloudGS };
               }
-              if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
-              return merged;
+
+              // 2. Si la nube tiene una ronda menor, ignorar (nuestro local es más nuevo)
+              if (cloudGS.gameRound < prev.gameRound) return prev;
+
+              // 3. Misma ronda: Mezclamos bolillas (Unión) para que ninguna "desaparezca"
+              const mergedBalls = Array.from(new Set([...prev.drawnBalls, ...(cloudGS.drawnBalls || [])]));
+              
+              // Si no hay cambios reales, no actualizar para evitar ciclos
+              const hasBallsChanged = mergedBalls.length !== prev.drawnBalls.length;
+              const hasStateChanged = prev.selectedPattern !== cloudGS.selectedPattern || 
+                                     prev.isPaused !== cloudGS.isPaused || 
+                                     prev.roundLocked !== cloudGS.roundLocked;
+
+              if (!hasBallsChanged && !hasStateChanged) return prev;
+
+              return {
+                ...prev,
+                ...cloudGS, // Copiamos el resto de flags (paused, pattern, etc)
+                drawnBalls: mergedBalls,
+                // Combinamos historial evitando duplicados exactos
+                history: Array.from(new Set([...prev.history, ...(cloudGS.history || [])])).slice(-50) 
+              };
             });
           } catch (e) { console.error("Error parsing gameState from cloud", e); }
         }
 
-        // Winners
+        // Winners - Unión por ID de participante y cartón
         if (s.winners) {
           try {
             const cloudWinners = typeof s.winners === 'string' ? JSON.parse(s.winners) : s.winners;
             setWinners(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(cloudWinners)) return prev;
-              return cloudWinners;
+              const cloudList = Array.isArray(cloudWinners) ? cloudWinners : [];
+              const combined = [...prev];
+              cloudList.forEach((cw: any) => {
+                const exists = combined.some(w => w.participantId === cw.participantId && w.cardId === cw.cardId && w.timestamp === cw.timestamp);
+                if (!exists) combined.push(cw);
+              });
+              if (JSON.stringify(prev) === JSON.stringify(combined)) return prev;
+              return combined;
             });
           } catch (e) { console.error("Error parsing winners from cloud", e); }
         }
 
-        // Prizes
+        // Prizes - Aquí prima la nube si hay más premios entregados
         if (s.prizes) {
           try {
             const cloudPrizes = typeof s.prizes === 'string' ? JSON.parse(s.prizes) : s.prizes;
             setPrizes(prev => {
               if (JSON.stringify(prev) === JSON.stringify(cloudPrizes)) return prev;
-              return cloudPrizes;
+              const cloudPizesArr = Array.isArray(cloudPrizes) ? cloudPrizes : [];
+              // Si la nube tiene más premios marcados como entregados, confiamos
+              const cloudAwardedCount = cloudPizesArr.filter(p => p.isAwarded).length;
+              const localAwardedCount = prev.filter(p => p.isAwarded).length;
+              return cloudAwardedCount >= localAwardedCount ? cloudPizesArr : prev;
             });
           } catch (e) { console.error("Error parsing prizes from cloud", e); }
         }
       }
+      
 
       if (!silent) showToast('¡Datos sincronizados correctamente!', 'success');
       setHasInitialCloudSync(true);
@@ -330,6 +361,9 @@ const App: React.FC = () => {
     if (url !== undefined) setSheetUrl(targetUrl);
 
     if (targetUrl && (hasInitialCloudSync || url !== undefined)) {
+      if (isSavingRef.current) return; // Evitar disparar otro save si hay uno en curso
+      
+      isSavingRef.current = true;
       if (!silent) setIsSyncing(true);
       try {
         await SheetAPI.syncSettings(targetUrl, {
@@ -345,6 +379,7 @@ const App: React.FC = () => {
       } catch (e) {
         console.error("Error sync settings:", e);
       } finally {
+        isSavingRef.current = false;
         if (!silent) setIsSyncing(false);
       }
     }
@@ -352,11 +387,15 @@ const App: React.FC = () => {
 
   // Efecto para auto-push de cambios importantes (solo si ya se sincronizó una vez con la nube)
   useEffect(() => {
+    // REFUERZO: No disparamos el auto-guardado si estamos en medio de una sincronización (polling o save manual)
+    // Esto evita que un "poll" que acaba de traer datos antiguos los empuje de vuelta antes de que se unan.
+    if (isSyncing || isPollingRef.current || isSavingRef.current) return;
+
     if (hasInitialCloudSync && autoSync && isAuthenticated) {
       // Debounce simple o simplemente disparar el sync de settings que ahora incluye todo
       const timer = setTimeout(() => {
         handleSaveSettings(undefined, undefined, undefined, undefined, true);
-      }, 2000);
+      }, 2000); 
       return () => clearTimeout(timer);
     }
   }, [gameState.drawnBalls, gameState.isPaused, gameState.selectedPattern, winners, prizes]);
