@@ -29,7 +29,8 @@ const LS_KEYS = {
   SUBTITLE: 'bingo_subtitle_v1',
   SHEET_URL: 'bingo_sheet_url_v1',
   AUTO_SYNC: 'bingo_auto_sync_v1',
-  SYNC_INTERVAL: 'bingo_sync_interval_v1'
+  SYNC_INTERVAL: 'bingo_sync_interval_v1',
+  CARD_PRICE: 'bingo_card_price_v1'
 };
 
 // URL por defecto proporcionada por el usuario
@@ -46,7 +47,7 @@ const loadFromStorage = <T,>(key: string, fallback: T): T => {
 };
 
 const App: React.FC = () => {
-  const { showAlert, showConfirm } = useAlert();
+  const { showAlert, showConfirm, showToast } = useAlert();
 
   // --- Auth State ---
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -65,8 +66,8 @@ const App: React.FC = () => {
   const [syncInterval, setSyncInterval] = useState<number>(() => loadFromStorage(LS_KEYS.SYNC_INTERVAL, 5000));
 
   const [isSyncing, setIsSyncing] = useState(false);
-  const [showConnectionModal, setShowConnectionModal] = useState(false);
-
+  const [showLoginConnection, setShowLoginConnection] = useState(false);
+  
   // Ref para evitar solapamiento de peticiones en polling
   const isPollingRef = useRef(false);
 
@@ -105,7 +106,10 @@ const App: React.FC = () => {
     loadFromStorage(LS_KEYS.SUBTITLE, "Aplicación web de bingo virtual")
   );
 
-  const [showTitleModal, setShowTitleModal] = useState(false);
+  const [cardPrice, setCardPrice] = useState<number>(() =>
+    loadFromStorage(LS_KEYS.CARD_PRICE, 5)
+  );
+
   const [currentBatchWinners, setCurrentBatchWinners] = useState<Winner[]>([]);
   const [viewingDetailsData, setViewingDetailsData] = useState<{
     winner: Winner;
@@ -116,7 +120,7 @@ const App: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showManagementMenu, setShowManagementMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [activeManagementModal, setActiveManagementModal] = useState<'none' | 'register' | 'prizes' | 'participants'>('none');
+  const [activeManagementModal, setActiveManagementModal] = useState<'none' | 'register' | 'prizes' | 'participants' | 'settings' | 'connection'>('none');
   const [isParticipantsDrawerOpen, setIsParticipantsDrawerOpen] = useState(false);
 
   const totalCards = participants.reduce((acc, p) => acc + p.cards.length, 0);
@@ -131,6 +135,7 @@ const App: React.FC = () => {
   useEffect(() => { localStorage.setItem(LS_KEYS.SHEET_URL, JSON.stringify(sheetUrl)); }, [sheetUrl]);
   useEffect(() => { localStorage.setItem(LS_KEYS.AUTO_SYNC, JSON.stringify(autoSync)); }, [autoSync]);
   useEffect(() => { localStorage.setItem(LS_KEYS.SYNC_INTERVAL, JSON.stringify(syncInterval)); }, [syncInterval]);
+  useEffect(() => { localStorage.setItem(LS_KEYS.CARD_PRICE, JSON.stringify(cardPrice)); }, [cardPrice]);
 
   // Carga inicial desde Google Sheets - Solo si está autenticado
   useEffect(() => {
@@ -226,11 +231,20 @@ const App: React.FC = () => {
           }
           return prev;
         });
-      } else {
-        console.error("Error al cargar datos:", result.message || result.error);
-        if (!silent) {
-          showAlert({ title: 'Error de Conexión', message: `No se pudieron cargar los datos: ${result.message || result.error}`, type: 'danger' });
-        }
+      }
+
+      // Fetch Settings separately
+      const settingsResult = await SheetAPI.fetchSettings(sheetUrl);
+      if (settingsResult.success && settingsResult.settings) {
+        const s = settingsResult.settings;
+        if (s.eventTitle) setBingoTitle(s.eventTitle);
+        if (s.eventSubtitle) setBingoSubtitle(s.eventSubtitle);
+        if (s.cardPrice) setCardPrice(Number(s.cardPrice));
+        if (s.sheetUrl) setSheetUrl(s.sheetUrl);
+      }
+
+      if (!silent) {
+        showToast('¡Datos sincronizados correctamente!', 'success');
       }
     } catch (error) {
       console.error("Error inesperado en loadFromCloud:", error);
@@ -264,6 +278,32 @@ const App: React.FC = () => {
       console.error("Error sync:", error);
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleSaveSettings = async (title?: string, subtitle?: string, price?: number, url?: string) => {
+    if (title !== undefined) setBingoTitle(title);
+    if (subtitle !== undefined) setBingoSubtitle(subtitle);
+    if (price !== undefined) setCardPrice(price);
+    if (url !== undefined) setSheetUrl(url);
+    
+    const targetUrl = url || sheetUrl;
+    if (targetUrl) {
+      setIsSyncing(true);
+      try {
+        await SheetAPI.syncSettings(targetUrl, {
+          eventTitle: title ?? bingoTitle,
+          eventSubtitle: subtitle ?? bingoSubtitle,
+          cardPrice: price ?? cardPrice,
+          sheetUrl: targetUrl
+        });
+        showToast('Configuración guardada en la nube', 'success');
+        addLog("Configuración sincronizada con la nube");
+      } catch (e) {
+        console.error("Error sync settings:", e);
+      } finally {
+        setIsSyncing(false);
+      }
     }
   };
 
@@ -955,9 +995,9 @@ const App: React.FC = () => {
         <Login
           onLogin={handleLogin}
           isLoading={isLoginLoading}
-          onOpenSettings={() => setShowConnectionModal(true)}
+          onOpenSettings={() => setShowLoginConnection(true)}
         />
-        {showConnectionModal && (
+        {showLoginConnection && (
           <ConnectionModal
             currentUrl={sheetUrl}
             currentAutoSync={autoSync}
@@ -966,9 +1006,9 @@ const App: React.FC = () => {
               setSheetUrl(url);
               setAutoSync(newAutoSync);
               setSyncInterval(newInterval);
-              // No cargamos datos aquí, esperamos al login
+              setShowLoginConnection(false);
             }}
-            onClose={() => setShowConnectionModal(false)}
+            onClose={() => setShowLoginConnection(false)}
             onSyncNow={() => { }} // Deshabilitado en login
           />
         )}
@@ -1050,6 +1090,7 @@ const App: React.FC = () => {
           }}
           totalParticipants={participants.length}
           totalCards={totalCards}
+          cardPrice={cardPrice}
           onClose={() => setActiveManagementModal('none')}
         />
       </Modal>
@@ -1096,16 +1137,28 @@ const App: React.FC = () => {
         />
       </Modal>
 
-      {showTitleModal && (
+      <Modal
+        isOpen={activeManagementModal === 'settings'}
+        onClose={() => setActiveManagementModal('none')}
+        maxWidth="max-w-md"
+      >
         <EditTitleModal
           currentTitle={bingoTitle}
           currentSubtitle={bingoSubtitle}
-          onSave={(t, s) => { setBingoTitle(t); setBingoSubtitle(s); setShowTitleModal(false); }}
-          onClose={() => setShowTitleModal(false)}
+          currentPrice={cardPrice}
+          onSave={(t, s, p) => {
+            handleSaveSettings(t, s, p);
+            setActiveManagementModal('none');
+          }}
+          onClose={() => setActiveManagementModal('none')}
         />
-      )}
+      </Modal>
 
-      {showConnectionModal && (
+      <Modal
+        isOpen={activeManagementModal === 'connection'}
+        onClose={() => setActiveManagementModal('none')}
+        maxWidth="max-w-lg"
+      >
         <ConnectionModal
           currentUrl={sheetUrl}
           currentAutoSync={autoSync}
@@ -1114,13 +1167,18 @@ const App: React.FC = () => {
             setSheetUrl(url);
             setAutoSync(newAutoSync);
             setSyncInterval(newInterval);
-            // Si ya estamos autenticados, recargamos datos
+            // Sync to cloud as requested
+            handleSaveSettings(undefined, undefined, undefined, url);
+            setActiveManagementModal('none');
+            // Recargar si ya autenticado
             if (isAuthenticated) loadFromCloud(false);
           }}
-          onClose={() => setShowConnectionModal(false)}
+          onClose={() => setActiveManagementModal('none')}
           onSyncNow={() => loadFromCloud(false)}
         />
-      )}
+      </Modal>
+
+
 
       {currentBatchWinners.length > 0 && (
         <WinnerModal
@@ -1168,30 +1226,16 @@ const App: React.FC = () => {
         <div className="flex items-center gap-3">
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-3">
-            <button
-              onClick={() => setShowConnectionModal(true)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${sheetUrl ? (isSyncing ? 'bg-amber-900/30 text-amber-400 border-amber-500/50' : 'bg-emerald-900/30 text-emerald-400 border-emerald-500/50') : 'bg-slate-800 text-slate-500 border-slate-700 hover:bg-slate-700'}`}
-              title={sheetUrl ? "Conectado a Google Sheets" : "Configurar Nube"}
-            >
-              {isSyncing ? <Loader2 size={14} className="animate-spin" /> : (autoSync ? <Zap size={14} className="text-yellow-400 fill-yellow-400" /> : <Cloud size={14} />)}
-              <span className="hidden sm:inline">{sheetUrl ? (isSyncing ? 'Sincronizando...' : (autoSync ? 'Auto-Sync ON' : 'Online')) : 'Offline'}</span>
-            </button>
-
-            {sheetUrl && !isSyncing && (
+            {sheetUrl && (
               <button
-                onClick={() => loadFromCloud(false)}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 border border-slate-700"
-                title="Forzar actualización desde Hoja de Cálculo"
+                onClick={() => !isSyncing && loadFromCloud(false)}
+                disabled={isSyncing}
+                className={`p-1.5 rounded-lg bg-slate-800 border border-slate-700 transition-all ${isSyncing ? 'text-amber-500 bg-amber-500/10' : 'hover:bg-slate-700 text-slate-400 hover:text-emerald-400'}`}
+                title={isSyncing ? "Sincronizando..." : "Forzar actualización desde Hoja de Cálculo"}
               >
-                <RefreshCw size={16} />
+                <RefreshCw size={18} className={isSyncing ? 'animate-spin' : ''} />
               </button>
             )}
-
-            <div className="w-px h-6 bg-slate-800 mx-1"></div>
-
-            <button onClick={() => setShowTitleModal(true)} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700">
-              <Edit size={18} />
-            </button>
 
             <button onClick={toggleFullScreen} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700">
               {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
@@ -1213,31 +1257,7 @@ const App: React.FC = () => {
           {/* Mobile Menu Dropdown */}
           {showMobileMenu && (
             <div className="absolute top-16 right-4 w-64 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-4 flex flex-col gap-3 z-50 md:hidden">
-              <button
-                onClick={() => { setShowConnectionModal(true); setShowMobileMenu(false); }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all border w-full ${sheetUrl ? (isSyncing ? 'bg-amber-900/30 text-amber-400 border-amber-500/50' : 'bg-emerald-900/30 text-emerald-400 border-emerald-500/50') : 'bg-slate-800 text-slate-500 border-slate-700 hover:bg-slate-700'}`}
-              >
-                {isSyncing ? <Loader2 size={16} className="animate-spin" /> : (autoSync ? <Zap size={16} className="text-yellow-400 fill-yellow-400" /> : <Cloud size={16} />)}
-                <span>{sheetUrl ? (isSyncing ? 'Sincronizando...' : (autoSync ? 'Auto-Sync ON' : 'Online')) : 'Configurar Nube'}</span>
-              </button>
 
-              {sheetUrl && !isSyncing && (
-                <button
-                  onClick={() => { loadFromCloud(false); setShowMobileMenu(false); }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 border border-slate-700 w-full"
-                >
-                  <RefreshCw size={18} />
-                  <span>Sincronizar Ahora</span>
-                </button>
-              )}
-
-              <button
-                onClick={() => { setShowTitleModal(true); setShowMobileMenu(false); }}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 w-full"
-              >
-                <Edit size={18} />
-                <span>Editar Título</span>
-              </button>
 
               <button
                 onClick={() => { toggleFullScreen(); setShowMobileMenu(false); }}
@@ -1248,7 +1268,16 @@ const App: React.FC = () => {
               </button>
 
               <div className="h-px bg-slate-800 my-1"></div>
-
+              {sheetUrl && (
+                <button
+                  onClick={() => { if(!isSyncing) loadFromCloud(false); }}
+                  disabled={isSyncing}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border w-full transition-all ${isSyncing ? 'bg-amber-900/40 text-amber-400 border-amber-500/50' : 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 border-slate-700'}`}
+                >
+                  <RefreshCw size={18} className={isSyncing ? 'animate-spin' : ''} />
+                  <span>{isSyncing ? 'Sincronizando...' : 'Sincronizar Ahora'}</span>
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-3 px-4 py-3 rounded-lg bg-rose-950/30 hover:bg-rose-900/50 text-rose-400 border border-rose-900/50 w-full"

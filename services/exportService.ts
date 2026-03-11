@@ -14,7 +14,9 @@ export const exportToExcel = (participants: Participant[]) => {
     Nombre: p.name,
     Apellidos: p.surname,
     DNI: p.dni,
-    Telefono: p.phone || ''
+    Telefono: p.phone || '',
+    'Estado de Pago': p.paymentStatus === 'debt' ? 'Debe' : 'Cancelado',
+    'Monto Deuda': p.paymentStatus === 'debt' && p.debtAmount ? p.debtAmount : 0
   }));
 
   // Sheet 2: Cartones
@@ -67,12 +69,23 @@ export const parseExcel = async (file: File): Promise<Participant[]> => {
         // Process Participants
         rawPart.forEach(r => {
           const id = r.ID ? String(r.ID) : `P${Math.random().toString(36).substr(2, 6)}`;
+          
+          let paymentStatus: 'paid' | 'debt' = 'paid';
+          let debtAmount: number | undefined = undefined;
+          
+          if (r['Estado de Pago'] && String(r['Estado de Pago']).toLowerCase() === 'debe') {
+            paymentStatus = 'debt';
+            debtAmount = r['Monto Deuda'] ? Number(r['Monto Deuda']) : undefined;
+          }
+
           participantsMap.set(id, {
             id,
             name: r.Nombre ? String(r.Nombre) : 'Sin Nombre',
             surname: r.Apellidos ? String(r.Apellidos) : '',
             dni: r.DNI ? String(r.DNI) : '',
             phone: r.Telefono ? String(r.Telefono) : '',
+            paymentStatus,
+            debtAmount,
             cards: []
           });
         });

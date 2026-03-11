@@ -1,12 +1,13 @@
 
 import React, { useState, useRef } from 'react';
-import { UserPlus, Hash, Phone, ChevronRight, RefreshCw, Minus, Plus, Ticket, User, Save, X } from 'lucide-react';
+import { UserPlus, Hash, Phone, ChevronRight, RefreshCw, Minus, Plus, Ticket, User, Save, X, CheckCircle, AlertCircle, DollarSign } from 'lucide-react';
 import { Participant } from '../types.ts';
 
 interface Props {
   onRegister: (data: Omit<Participant, 'id' | 'cards'>, cardsCount: number) => void;
   totalParticipants: number;
   totalCards: number;
+  cardPrice: number;
   onClose: () => void;
 }
 
@@ -15,13 +16,15 @@ const generateRandomDNI = () => {
   return Math.floor(10000000 + Math.random() * 90000000).toString();
 };
 
-const RegistrationPanel: React.FC<Props> = ({ onRegister, totalParticipants, totalCards, onClose }) => {
+const RegistrationPanel: React.FC<Props> = ({ onRegister, totalParticipants, totalCards, cardPrice, onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
     surname: '',
     dni: generateRandomDNI(), // Inicializar con un ID generado
     phone: '',
-    cardsCount: '1' as string | number
+    cardsCount: '1' as string | number,
+    paymentStatus: 'paid' as 'paid' | 'debt',
+    debtAmount: '' as string | number
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -37,6 +40,15 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, totalParticipants, tot
     setFormData(prev => ({ ...prev, dni: generateRandomDNI() }));
   };
 
+  // Autocalcular deuda cuando cambia la cantidad de cartones
+  React.useEffect(() => {
+    if (formData.paymentStatus === 'debt') {
+      const price = Number(cardPrice) || 0;
+      const count = Number(formData.cardsCount) || 0;
+      setFormData(prev => ({ ...prev, debtAmount: price * count }));
+    }
+  }, [formData.cardsCount, formData.paymentStatus, cardPrice]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.dni) return;
@@ -48,7 +60,9 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, totalParticipants, tot
         name: formData.name,
         surname: formData.surname,
         dni: formData.dni,
-        phone: formData.phone
+        phone: formData.phone,
+        paymentStatus: formData.paymentStatus,
+        debtAmount: formData.paymentStatus === 'debt' ? Number(formData.debtAmount) : undefined
       },
       count
     );
@@ -58,7 +72,9 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, totalParticipants, tot
       surname: '',
       dni: generateRandomDNI(), // Generar nuevo ID para el siguiente usuario
       phone: '',
-      cardsCount: '1'
+      cardsCount: '1',
+      paymentStatus: 'paid',
+      debtAmount: ''
     });
 
     // Regresar el foco al primer input (Nombre)
@@ -68,7 +84,7 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, totalParticipants, tot
   };
 
   return (
-    <div className="p-4 flex flex-col gap-3 relative overflow-hidden group shrink-0 h-full max-h-[90vh]">
+    <div className="p-4 flex flex-col gap-3 relative overflow-hidden group h-full">
 
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-40 h-40 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
@@ -100,7 +116,7 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, totalParticipants, tot
       </div>
 
       <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 relative z-10">
-        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-4">
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-4 pb-10">
           {/* Nombre */}
           <div className="relative group/input">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-cyan-400 transition-colors">
@@ -226,16 +242,68 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, totalParticipants, tot
               </button>
             </div>
           </div>
+
+          {/* Payment Status */}
+          <div className="bg-slate-900/40 rounded-3xl p-4 sm:p-5 border border-slate-800/50 backdrop-blur-sm relative overflow-hidden group/payment">
+            <div className="flex flex-col gap-3 relative z-10">
+              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em]">Estado de Pago</label>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({...formData, paymentStatus: 'paid', debtAmount: ''})}
+                  className={`py-2.5 sm:py-3 rounded-xl border flex items-center justify-center gap-2 font-bold transition-all ${
+                    formData.paymentStatus === 'paid' 
+                      ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 shadow-[inset_0_2px_15px_rgba(16,185,129,0.1)]' 
+                      : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  <CheckCircle size={18} /> Cancelado
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({...formData, paymentStatus: 'debt'})}
+                  className={`py-2.5 sm:py-3 rounded-xl border flex items-center justify-center gap-2 font-bold transition-all ${
+                    formData.paymentStatus === 'debt' 
+                      ? 'bg-rose-500/10 border-rose-500/50 text-rose-400 shadow-[inset_0_2px_15px_rgba(244,63,94,0.1)]' 
+                      : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  <AlertCircle size={18} /> Debe
+                </button>
+              </div>
+
+              {formData.paymentStatus === 'debt' && (
+                <div className="mt-2 relative animate-in slide-in-from-top-2 duration-200 fade-in">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-rose-500/70 font-bold">
+                    <DollarSign size={18} />
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    value={formData.debtAmount}
+                    onChange={e => setFormData({ ...formData, debtAmount: e.target.value })}
+                    className="w-full bg-slate-950/80 border border-rose-500/30 rounded-xl pl-12 pr-4 py-3 sm:py-4 text-base text-white placeholder-slate-700 focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 outline-none transition-all shadow-sm font-mono"
+                    placeholder="Monto a deber..."
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Fixed Button */}
-        <button
-          type="submit"
-          className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-cyan-900/40 flex items-center justify-center gap-2 mt-4 shrink-0 uppercase tracking-widest text-sm"
-        >
-          <Save size={20} />
-          Registrar Jugador
-        </button>
+        <div className="mt-auto shrink-0 pb-2">
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-cyan-900/40 flex items-center justify-center gap-2 uppercase tracking-widest text-sm"
+          >
+            <Save size={20} />
+            Registrar Jugador
+          </button>
+        </div>
       </form>
     </div>
   );

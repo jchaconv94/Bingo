@@ -1,34 +1,37 @@
 import React, { useState } from 'react';
-import { X, Type, Save, AlignLeft, RotateCcw } from 'lucide-react';
+import { X, Type, Save, AlignLeft, RotateCcw, DollarSign } from 'lucide-react';
 import { useAlert } from '../contexts/AlertContext.tsx';
 
 interface Props {
   currentTitle: string;
   currentSubtitle: string;
-  onSave: (newTitle: string, newSubtitle: string) => void;
+  currentPrice: number;
+  onSave: (newTitle: string, newSubtitle: string, newPrice: number) => void;
   onClose: () => void;
 }
 
-const EditTitleModal: React.FC<Props> = ({ currentTitle, currentSubtitle, onSave, onClose }) => {
+const EditTitleModal: React.FC<Props> = ({ currentTitle, currentSubtitle, currentPrice, onSave, onClose }) => {
   const { showConfirm } = useAlert();
   const [title, setTitle] = useState(currentTitle);
   const [subtitle, setSubtitle] = useState(currentSubtitle);
+  const [price, setPrice] = useState(currentPrice);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(title, subtitle);
+    onSave(title, subtitle, price);
   };
 
   const handleReset = async () => {
     const confirmed = await showConfirm({
         title: 'Restaurar',
-        message: "¿Restaurar título y descripción originales?",
+        message: "¿Restaurar parámetros originales?",
         confirmText: 'Sí, restaurar',
         type: 'warning'
     });
     if (confirmed) {
       setTitle("VIRTUAL BINGO PRO");
       setSubtitle("Aplicación web de bingo virtual");
+      setPrice(5);
     }
   };
 
@@ -73,6 +76,21 @@ const EditTitleModal: React.FC<Props> = ({ currentTitle, currentSubtitle, onSave
               onChange={(e) => setSubtitle(e.target.value)}
               className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-300 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all text-sm"
               placeholder="Ej: A beneficio de..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-slate-400 font-bold uppercase mb-1.5 flex items-center gap-1.5">
+              <DollarSign size={12} className="text-emerald-500" /> Precio por Cartón (S/)
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.50"
+              value={price}
+              onChange={(e) => setPrice(Number(e.target.value))}
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all font-bold"
+              placeholder="Ej: 5.00"
             />
           </div>
 

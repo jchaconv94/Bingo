@@ -1,11 +1,11 @@
 import React, { useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { UserPlus, Gift, Users, Upload, FileSpreadsheet, Archive, X } from 'lucide-react';
+import { UserPlus, Gift, Users, Upload, FileSpreadsheet, Archive, X, Settings, Cloud } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onOpenModal: (modal: 'register' | 'prizes' | 'participants') => void;
+  onOpenModal: (modal: 'register' | 'prizes' | 'participants' | 'settings' | 'connection') => void;
   onImport: (file: File) => void;
   onExport: () => void;
   onBackup: () => void;
@@ -140,6 +140,34 @@ const ManagementMenu: React.FC<Props> = ({
               <div className="text-center">
                 <h3 className="text-[13px] sm:text-lg font-bold text-white mb-1">Backup ZIP</h3>
                 <p className="text-[9px] sm:text-xs text-slate-400 line-clamp-2">Descargar todos los cartones en imágenes</p>
+              </div>
+            </button>
+
+            {/* Configuración */}
+            <button 
+              onClick={() => onOpenModal('settings')}
+              className="group relative bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/50 rounded-xl sm:rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center gap-3 sm:gap-4 transition-all hover:-translate-y-1 shadow-lg hover:shadow-cyan-900/20"
+            >
+              <div className="p-3 sm:p-4 bg-cyan-500/10 rounded-xl sm:rounded-2xl text-cyan-400 group-hover:scale-110 transition-transform">
+                <Settings size={28} strokeWidth={1.5} className="sm:w-10 sm:h-10" />
+              </div>
+              <div className="text-center">
+                <h3 className="text-[13px] sm:text-lg font-bold text-white mb-1">Configuración</h3>
+                <p className="text-[9px] sm:text-xs text-slate-400 line-clamp-2">Parámetros del evento y precio de cartón</p>
+              </div>
+            </button>
+
+            {/* Conexión */}
+            <button 
+              onClick={() => onOpenModal('connection')}
+              className="group relative bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-xl sm:rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center gap-3 sm:gap-4 transition-all hover:-translate-y-1 shadow-lg hover:shadow-emerald-900/20"
+            >
+              <div className="p-3 sm:p-4 bg-emerald-500/10 rounded-xl sm:rounded-2xl text-emerald-400 group-hover:scale-110 transition-transform">
+                <Cloud size={28} strokeWidth={1.5} className="sm:w-10 sm:h-10" />
+              </div>
+              <div className="text-center">
+                <h3 className="text-[13px] sm:text-lg font-bold text-white mb-1">Conexión</h3>
+                <p className="text-[9px] sm:text-xs text-slate-400 line-clamp-2">Enlace con Google Sheets y Sincronización</p>
               </div>
             </button>
 

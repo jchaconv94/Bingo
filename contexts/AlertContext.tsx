@@ -23,6 +23,7 @@ interface AlertOptions {
 interface AlertContextType {
   showAlert: (options: AlertOptions) => Promise<void>;
   showConfirm: (options: AlertOptions) => Promise<boolean>;
+  showToast: (message: string, type?: AlertType, duration?: number) => void;
 }
 
 const AlertContext = createContext<AlertContextType | undefined>(undefined);
@@ -42,6 +43,8 @@ export const AlertProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     resolve: () => {},
   });
 
+  const [toast, setToast] = useState<{ message: string; type: AlertType; visible: boolean } | null>(null);
+
   const showAlert = useCallback((options: AlertOptions) => {
     return new Promise<void>((resolve) => {
       setConfig({ ...options, type: options.type || 'info', resolve });
@@ -54,6 +57,13 @@ export const AlertProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setConfig({ ...options, type: 'confirm', resolve });
       setIsOpen(true);
     });
+  }, []);
+
+  const showToast = useCallback((message: string, type: AlertType = 'info', duration: number = 3000) => {
+    setToast({ message, type, visible: true });
+    setTimeout(() => {
+      setToast(prev => prev ? { ...prev, visible: false } : null);
+    }, duration);
   }, []);
 
   const handleClose = (result: boolean = false) => {
@@ -86,9 +96,37 @@ export const AlertProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }
 
   return (
-    <AlertContext.Provider value={{ showAlert, showConfirm }}>
+    <AlertContext.Provider value={{ showAlert, showConfirm, showToast }}>
       {children}
       
+      {/* Toast / Toplip Notification */}
+      {toast && (
+        <div 
+          className={`fixed top-4 right-4 z-[10000] flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl transition-all duration-300 transform ${toast.visible ? 'translate-y-0 opacity-100 scale-100' : '-translate-y-4 opacity-0 scale-95 pointer-events-none'} ${
+            toast.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-100' :
+            toast.type === 'danger' ? 'bg-rose-950/90 border-rose-500/50 text-rose-100' :
+            toast.type === 'warning' ? 'bg-amber-950/90 border-amber-500/50 text-amber-100' :
+            'bg-slate-900/90 border-slate-700 text-slate-100'
+          } backdrop-blur-md`}
+        >
+          <div className="flex-shrink-0">
+            {toast.type === 'success' && <CheckCircle size={20} className="text-emerald-400" />}
+            {toast.type === 'danger' && <XCircle size={20} className="text-rose-400" />}
+            {toast.type === 'warning' && <AlertTriangle size={20} className="text-amber-400" />}
+            {toast.type === 'info' && <Info size={20} className="text-blue-400" />}
+          </div>
+          <div className="text-sm font-medium tracking-wide">
+            {toast.message}
+          </div>
+          <button 
+            onClick={() => setToast(prev => prev ? { ...prev, visible: false } : null)}
+            className="ml-2 hover:bg-white/10 rounded-lg p-1 transition-colors"
+          >
+            <XCircle size={14} className="opacity-50" />
+          </button>
+        </div>
+      )}
+
       {/* Modal Overlay */}
       {isOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">

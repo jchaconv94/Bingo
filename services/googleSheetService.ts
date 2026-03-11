@@ -4,6 +4,7 @@ import { Participant } from '../types.ts';
 export interface ApiResponse {
   success: boolean;
   data?: any;
+  settings?: any;
   message?: string;
   error?: string;
 }
@@ -94,6 +95,34 @@ export const SheetAPI = {
       return { success: false, message: json.message || 'Error desconocido' };
     } catch (error) {
       console.error("Fetch Error:", error);
+      return { success: false, error: String(error) };
+    }
+  },
+
+  async syncSettings(url: string, settings: any): Promise<ApiResponse> {
+    try {
+      const endpoint = `${url}?action=save_settings`;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify({ settings }),
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+      });
+      const json = await response.json();
+      return json;
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  },
+
+  async fetchSettings(url: string): Promise<ApiResponse> {
+    try {
+      const endpoint = `${url}?action=read_settings`;
+      const response = await fetch(endpoint);
+      const json = await response.json();
+      return json;
+    } catch (error) {
       return { success: false, error: String(error) };
     }
   }

@@ -12,6 +12,8 @@ export interface Participant {
   dni: string;
   phone?: string;
   cards: BingoCard[];
+  paymentStatus?: 'paid' | 'debt';
+  debtAmount?: number;
 }
 
 export interface Winner {
@@ -75,3 +77,10 @@ export interface GameState {
 export const TOTAL_BALLS = 75;
 export const CARDS_PER_USER_LIMIT = 100;
 export const NUMBERS_PER_CARD = 24; // 24 numbers + 1 free space
+
+export interface AppSettings {
+  eventTitle: string;
+  eventSubtitle: string;
+  cardPrice: number;
+  sheetUrl?: string;
+}
