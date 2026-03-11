@@ -57,7 +57,7 @@ export const SheetAPI = {
 
   async deleteParticipant(url: string, id: string): Promise<ApiResponse> {
     try {
-      const endpoint = `${url}?action=delete`;
+      const endpoint = `${url}?action=delete&id=${id}`;
       const response = await fetch(endpoint, {
         method: 'POST',
         body: JSON.stringify({ action: 'delete', id }),
