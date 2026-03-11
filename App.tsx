@@ -254,15 +254,18 @@ const App: React.FC = () => {
           try {
             const cloudGS = typeof s.gameState === 'string' ? JSON.parse(s.gameState) : s.gameState;
             setGameState(prev => {
-              // 1. Si la ronda es distinta (reset), adoptamos todo de la nube
-              if (cloudGS.gameRound > prev.gameRound) {
+              // 1. Si la ronda en la nube es 1 y nosotros estamos en >1, es un RESET TOTAL
+              const isMasterReset = cloudGS.gameRound === 1 && prev.gameRound > 1;
+              
+              // 2. Si la ronda es distinta (reset o avance), adoptamos todo de la nube
+              if (cloudGS.gameRound > prev.gameRound || isMasterReset) {
                 return { ...prev, ...cloudGS, lastCardSequence: prev.lastCardSequence };
               }
               
-              // 2. Si nosotros tenemos una ronda mayor local, ignoramos nube
-              if (cloudGS.gameRound < prev.gameRound) return prev;
+              // 3. Si nosotros tenemos una ronda mayor local (y no es reset a 1), ignoramos nube
+              if (cloudGS.gameRound < prev.gameRound && !isMasterReset) return prev;
 
-              // 3. Misma ronda: Fusión de bolillas (Unión)
+              // 4. Misma ronda: Fusión de bolillas (Unión)
               const cloudBalls = Array.isArray(cloudGS.drawnBalls) ? cloudGS.drawnBalls : [];
               const mergedBalls = Array.from(new Set([...prev.drawnBalls, ...cloudBalls]));
               
@@ -289,7 +292,16 @@ const App: React.FC = () => {
             const cloudWinners = typeof s.winners === 'string' ? JSON.parse(s.winners) : s.winners;
             setWinners(prev => {
               const cloudList = Array.isArray(cloudWinners) ? cloudWinners : [];
-              if (cloudList.length === 0 && prev.length > 0) return prev;
+              
+              // Detectamos si debemos SOBREESCRIBIR (cuando hay cambio de ronda o reset)
+              // Usamos una variable auxiliar o simplemente confiamos en que si el gameState cambió,
+              // aquí también debemos ser cuidadosos.
+              // Para ser seguros: si la nube viene vacía y nosotros tenemos datos, 
+              // solo vaciamos si la ronda se reseteó a 1.
+              const isResetAction = s.gameState && JSON.parse(s.gameState).gameRound === 1;
+              
+              if (isResetAction) return cloudList; // Reset total
+              if (cloudList.length === 0 && prev.length > 0) return prev; // Evitar vaciado accidental
               
               const combined = [...prev];
               cloudList.forEach((cw: any) => {
@@ -307,14 +319,19 @@ const App: React.FC = () => {
           try {
             const cloudPrizes = typeof s.prizes === 'string' ? JSON.parse(s.prizes) : s.prizes;
             setPrizes(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(cloudPrizes)) return prev;
-              const cloudPizesArr = Array.isArray(cloudPrizes) ? cloudPrizes : [];
-              // Si la nube tiene más premios marcados como entregados, confiamos
-              const cloudAwardedCount = cloudPizesArr.filter(p => p.isAwarded).length;
-              const localAwardedCount = prev.filter(p => p.isAwarded).length;
-              return cloudAwardedCount >= localAwardedCount ? cloudPizesArr : prev;
+              const cloudList = Array.isArray(cloudPrizes) ? cloudPrizes : [];
+              const isResetAction = s.gameState && JSON.parse(s.gameState).gameRound === 1;
+              
+              if (isResetAction) {
+                return cloudList; // Reset total
+              }
+
+              if (cloudList.length === 0) return prev;
+              const cloudAwarded = cloudList.filter(p => p.isAwarded).length;
+              const localAwarded = prev.filter(p => p.isAwarded).length;
+              return cloudAwarded >= localAwarded ? cloudList : prev;
             });
-          } catch (e) { console.error("Error parsing prizes from cloud", e); }
+          } catch (e) { console.error("Sync Prizes Error:", e); }
         }
       }
       
