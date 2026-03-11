@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Cloud, Link, CheckCircle, AlertTriangle, Save, Database, Clock, Zap } from 'lucide-react';
+import { X, Cloud, Link, CheckCircle, AlertTriangle, Save, Database, Clock, Zap, RefreshCw, ChevronDown } from 'lucide-react';
 import { SheetAPI } from '../services/googleSheetService.ts';
 
 interface Props {
@@ -45,121 +45,157 @@ const ConnectionModal: React.FC<Props> = ({ currentUrl, currentAutoSync, current
   };
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300">
+    <div className="flex flex-col h-full bg-slate-900">
+      {/* Header Premium - Más refinado para desktop */}
+      <div className="bg-slate-900 px-6 py-5 sm:px-10 border-b border-white/[0.05] flex justify-between items-center shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-400 shadow-inner">
+            <Cloud size={24} strokeWidth={1.5} />
+          </div>
+          <div className="flex flex-col">
+            <h2 className="text-xl font-black text-white tracking-tight">Conexión a la Nube</h2>
+            <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Servicio de Google Sheets v3.0</span>
+          </div>
+        </div>
+        <button 
+          onClick={onClose} 
+          className="p-2.5 bg-slate-800/50 hover:bg-slate-700/80 rounded-2xl text-slate-400 hover:text-white transition-all border border-slate-700/50 group"
+        >
+          <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+        </button>
+      </div>
 
-        <div className="bg-gradient-to-r from-emerald-900 to-slate-900 px-6 py-4 border-b border-slate-800 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Cloud className="text-emerald-400" size={24} />
-            Conexión Google Sheets
-          </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
-            <X size={20} />
-          </button>
+      <div className="p-6 sm:p-10 space-y-8 overflow-y-auto custom-scrollbar flex-1">
+        {/* Banner de Sincronización */}
+        <div className="relative group overflow-hidden bg-slate-800/30 p-6 rounded-3xl border border-emerald-500/20 shadow-2xl">
+          <div className="absolute right-0 top-0 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
+            <Database size={200} className="translate-x-1/4 -translate-y-1/4" />
+          </div>
+          
+          <div className="relative flex flex-col sm:flex-row items-center gap-6">
+            <div className="p-4 bg-emerald-500/10 rounded-full text-emerald-400">
+              <Zap size={32} className="animate-pulse" />
+            </div>
+            <div className="text-center sm:text-left">
+              <h3 className="text-lg font-bold text-emerald-400 mb-1">Sincronización en Tiempo Real</h3>
+              <p className="text-slate-400 text-sm leading-relaxed max-w-xl">
+                Al activar el enlace con Google Sheets, tus datos estarán protegidos y disponibles en cualquier dispositivo. 
+                Ideal para operativos con múltiples cajeros o administradores.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="p-6 space-y-6">
-          <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700 text-sm text-slate-300">
-            <p className="mb-2 flex items-start gap-2">
-              <Database size={16} className="text-emerald-400 mt-0.5 shrink-0" />
-              <strong>Sincronización en la Nube:</strong>
-            </p>
-            <p className="opacity-80 ml-6">
-              Los datos de participantes se sincronizan automáticamente con tu hoja de cálculo. Cualquier cambio realizado en otra PC se reflejará aquí.
-            </p>
+        <div className="grid grid-cols-1 gap-8 items-start">
+          {/* Input URL */}
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-[11px] font-black uppercase text-slate-500 tracking-[0.2em] pl-1">
+              <Link size={14} className="text-emerald-500" />
+              URL del Backend (Apps Script)
+            </label>
+            <div className="group relative">
+              <div className="absolute inset-0 bg-emerald-500/5 blur-xl group-focus-within:bg-emerald-500/10 transition-colors rounded-full opacity-0 group-focus-within:opacity-100"></div>
+              <input
+                type="text"
+                value={url}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  setStatus('idle');
+                }}
+                placeholder="https://script.google.com/macros/s/..."
+                className="relative w-full bg-slate-950/80 border border-slate-700 px-6 py-5 rounded-3xl text-sm text-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all shadow-2xl placeholder:text-slate-700 font-mono"
+              />
+            </div>
+            <p className="text-[11px] text-slate-500 pl-6 italic">Pega aquí el enlace "Web App" generado desde tu Editor de Scripts</p>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-2">URL del Apps Script (Web App)</label>
-              <div className="relative">
-                <Link className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                <input
-                  type="text"
-                  value={url}
-                  onChange={(e) => {
-                    setUrl(e.target.value);
-                    setStatus('idle');
-                  }}
-                  placeholder="https://script.google.com/macros/s/..."
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg pl-10 pr-3 py-2.5 text-sm text-white focus:border-emerald-500 outline-none transition-all"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                    <Zap size={14} className={autoSync ? "text-yellow-400" : "text-slate-600"} /> Auto-Sync
-                  </span>
-                  <span className="text-[10px] text-slate-500">Actualizar en segundo plano</span>
-                </div>
+          {/* Controles */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-slate-950/40 p-6 rounded-3xl border border-slate-800 hover:border-slate-700 transition-all group">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-black text-slate-200 flex items-center gap-2">
+                  <Zap size={18} className={autoSync ? "text-yellow-400" : "text-slate-600"} /> 
+                  Auto-Sincronización
+                </span>
                 <button
                   onClick={() => setAutoSync(!autoSync)}
-                  className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${autoSync ? 'bg-emerald-500' : 'bg-slate-700'}`}
+                  className={`w-14 h-7 rounded-full relative transition-all duration-300 shadow-inner ${autoSync ? 'bg-emerald-500' : 'bg-slate-700'}`}
                 >
-                  <div className={`absolute top-1 w-3 h-3 bg-white rounded-full shadow-md transition-transform duration-300 ${autoSync ? 'left-6' : 'left-1'}`}></div>
+                  <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-300 transform ${autoSync ? 'translate-x-8' : 'translate-x-1'}`}></div>
                 </button>
               </div>
+              <p className="text-xs text-slate-500 leading-relaxed group-hover:text-slate-400 transition-colors">
+                Envía cambios de forma invisible mientras trabajas.
+              </p>
+            </div>
 
-              <div className="bg-slate-950 border border-slate-800 rounded-lg p-3">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5 mb-1">
-                  <Clock size={14} className="text-cyan-400" /> Frecuencia
-                </label>
+            <div className="bg-slate-950/40 p-6 rounded-3xl border border-slate-800 hover:border-slate-700 transition-all group">
+              <label className="text-sm font-black text-slate-200 flex items-center gap-2 mb-3">
+                <Clock size={16} className="text-cyan-400" /> Frecuencia de envío
+              </label>
+              <div className="relative">
                 <select
                   value={interval}
                   onChange={(e) => setIntervalVal(Number(e.target.value))}
                   disabled={!autoSync}
-                  className={`w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white outline-none focus:border-cyan-500 ${!autoSync ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`w-full bg-slate-900/80 border border-slate-700 rounded-2xl px-5 py-3 text-sm text-white outline-none focus:border-cyan-500 appearance-none transition-all shadow-inner ${!autoSync ? 'opacity-30 grayscale cursor-not-allowed' : 'opacity-100 hover:border-slate-600'}`}
                 >
-                  <option value={2000}>Cada 2 segundos (Rápido)</option>
-                  <option value={5000}>Cada 5 segundos (Normal)</option>
-                  <option value={10000}>Cada 10 segundos</option>
-                  <option value={30000}>Cada 30 segundos</option>
-                  <option value={60000}>Cada 1 minuto</option>
+                  <option value={2000}>🚀 Tiempo Real (2 seg.)</option>
+                  <option value={5000}>⚡ Rápido (5 seg.)</option>
+                  <option value={10000}>⚓ Estándar (10 seg.)</option>
+                  <option value={30000}>🔋 Ahorro de Datos (30 seg.)</option>
+                  <option value={60000}>📦 Bajo consumo (1 min.)</option>
                 </select>
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                  <ChevronDown size={18} />
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          {status !== 'idle' && (
-            <div className={`p-3 rounded-lg text-xs font-medium flex items-center gap-2 ${status === 'success' ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-500/30' : 'bg-rose-900/30 text-rose-400 border border-rose-500/30'}`}>
-              {status === 'success' ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
-              {statusMsg}
+        {/* Status Message */}
+        {status !== 'idle' && (
+          <div className={`p-6 rounded-3xl text-sm font-bold flex items-center gap-4 animate-in zoom-in-95 duration-300 border bg-slate-950/40 shadow-2xl ${status === 'success' ? 'text-emerald-400 border-emerald-500/20' : 'text-rose-400 border-rose-500/20'}`}>
+            <div className={`p-3 rounded-2xl ${status === 'success' ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
+              {status === 'success' ? <CheckCircle size={24} /> : <AlertTriangle size={24} />}
             </div>
-          )}
-
-          <div className="flex justify-between items-center pt-4 border-t border-slate-800">
-            <button
-              onClick={handleTest}
-              disabled={!url || isTesting}
-              className={`text-xs font-bold px-4 py-2 rounded-lg border transition-all ${!url ? 'text-slate-600 border-transparent cursor-not-allowed' : 'text-slate-300 border-slate-600 hover:bg-slate-800'}`}
-            >
-              {isTesting ? 'Probando...' : 'Probar Conexión'}
-            </button>
-
-            <div className="flex gap-3">
-              {currentUrl && (
-                <button
-                  onClick={() => {
-                    onSyncNow();
-                    onClose();
-                  }}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-lg transition-colors"
-                >
-                  Forzar Descarga
-                </button>
-              )}
-              <button
-                onClick={handleSave}
-                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg shadow-lg shadow-emerald-900/30 flex items-center gap-2"
-              >
-                <Save size={16} />
-                Guardar
-              </button>
+            <div className="flex flex-col">
+              <span className="text-[11px] uppercase tracking-widest opacity-60 mb-1">{status === 'success' ? 'Éxito' : 'Error detectado'}</span>
+              <span className="text-lg leading-tight uppercase tracking-tight">{statusMsg}</span>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Footer Premium para Desktop - Uniforme y sin overlaps */}
+      <div className="p-6 sm:p-8 bg-slate-900 border-t border-white/[0.05] shrink-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <button
+            onClick={handleTest}
+            disabled={!url || isTesting}
+            className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all border ${!url || isTesting ? 'opacity-50 cursor-not-allowed border-slate-800 text-slate-500' : 'border-slate-700 bg-slate-800 text-white hover:bg-slate-750'}`}
+          >
+            {isTesting ? 'Verificando...' : 'Probar conexión'}
+          </button>
+
+          {currentUrl && (
+            <button
+              onClick={onSyncNow}
+              className="w-full py-4 bg-slate-800/50 hover:bg-slate-700 text-white rounded-2xl transition-all border border-slate-700 flex items-center justify-center gap-2 group"
+            >
+              <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-500" />
+              <span className="font-bold text-xs uppercase tracking-widest">Forzar Bajada</span>
+            </button>
+          )}
+
+          <button
+            onClick={handleSave}
+            className={`w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all uppercase tracking-widest ${currentUrl ? 'lg:col-span-1' : 'sm:col-span-1'}`}
+          >
+            <Save size={18} />
+            <span>Guardar</span>
+          </button>
         </div>
       </div>
     </div>

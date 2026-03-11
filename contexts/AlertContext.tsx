@@ -129,7 +129,7 @@ export const AlertProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       {/* Modal Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/5 backdrop-blur-md animate-in fade-in duration-200">
           <div className={`bg-slate-900 border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300 transform scale-100 ${getColors()}`}>
             
             <div className="p-6 text-center">

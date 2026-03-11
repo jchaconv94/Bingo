@@ -16,8 +16,8 @@ const Modal: React.FC<Props> = ({ isOpen, onClose, title, children, maxWidth = '
   if (!isOpen) return null;
 
   return createPortal(
-    <div className={`fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm ${fullScreenMobile ? 'p-0 sm:p-4' : 'p-4'} animate-in fade-in duration-200`}>
-      <div className={`relative bg-slate-900 border border-slate-800 ${fullScreenMobile ? 'rounded-none sm:rounded-2xl max-h-[100dvh] sm:max-h-[85vh] h-full sm:h-auto border-x-0 sm:border-x' : 'rounded-2xl max-h-[85vh]'} shadow-2xl w-full ${maxWidth} flex flex-col overflow-hidden animate-in zoom-in-95 duration-200`}>
+    <div className={`fixed inset-0 z-[130] flex items-center justify-center bg-black/5 backdrop-blur-md ${fullScreenMobile ? 'p-0' : 'p-4'} animate-in fade-in duration-300`}>
+      <div className={`relative bg-slate-900 border border-slate-800 ${fullScreenMobile ? 'rounded-none sm:rounded-2xl h-[100dvh] sm:h-auto sm:max-h-[85vh] border-x-0 sm:border-x' : 'rounded-2xl max-h-[85vh]'} shadow-2xl w-full ${maxWidth} flex flex-col overflow-hidden animate-in zoom-in-95 duration-200`}>
         
         {title && (
           <div className="flex justify-between items-center p-4 border-b border-slate-800/50 flex-shrink-0">

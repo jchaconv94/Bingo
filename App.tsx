@@ -1140,7 +1140,7 @@ const App: React.FC = () => {
       <Modal
         isOpen={activeManagementModal === 'settings'}
         onClose={() => setActiveManagementModal('none')}
-        maxWidth="max-w-md"
+        maxWidth="max-w-2xl"
       >
         <EditTitleModal
           currentTitle={bingoTitle}
@@ -1157,7 +1157,7 @@ const App: React.FC = () => {
       <Modal
         isOpen={activeManagementModal === 'connection'}
         onClose={() => setActiveManagementModal('none')}
-        maxWidth="max-w-lg"
+        maxWidth="max-w-2xl"
       >
         <ConnectionModal
           currentUrl={sheetUrl}
