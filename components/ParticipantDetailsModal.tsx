@@ -268,6 +268,7 @@ const ParticipantDetailsModal: React.FC<Props> = ({
                             isCompact={true}
                             currentPattern={currentPattern}
                             readOnly={false}
+                            isRetired={card.isRetired}
                          />
                       </div>
                    ))}

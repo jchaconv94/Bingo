@@ -38,14 +38,14 @@ const BingoCard: React.FC<Props> = ({
   const patternIndices = WIN_PATTERNS[currentPattern].indices;
 
   // Calculate if this card is a winner based on the pattern
-  // Note: We allow retired cards to show as winners if they match the pattern
-  const isWinner = !card.isInvalid && patternIndices.length > 0 && patternIndices.every(idx => {
+  // Retired/Invalid cards cannot be winners
+  const isWinner = !isInvalid && patternIndices.length > 0 && patternIndices.every(idx => {
     const val = card.numbers[idx];
     return val === 0 || drawnBalls.includes(val);
   });
 
   // Calculate progress for UI
-  const matchesCount = patternIndices.filter(idx => {
+  const matchesCount = isInvalid ? 0 : patternIndices.filter(idx => {
     const val = card.numbers[idx];
     return val !== 0 && drawnBalls.includes(val);
   }).length;
@@ -176,10 +176,12 @@ const BingoCard: React.FC<Props> = ({
             let cellStyle = 'bg-slate-800 border-slate-700 text-slate-400'; // Default inactive
             let content = <span className="opacity-80">{number}</span>;
             
-            if (isInvalid) {
+             if (isInvalid) {
                cellStyle = "bg-slate-900 border-slate-800 text-slate-700";
                if (isCenter) {
                   content = <Ban size={isPanelVariant ? 10 : isCompact ? 16 : 24} className="text-slate-700" />;
+               } else {
+                  content = <span className="opacity-40">{number}</span>;
                }
             } else {
                // Normal Logic
