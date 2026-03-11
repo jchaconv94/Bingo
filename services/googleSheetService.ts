@@ -35,13 +35,19 @@ export const SheetAPI = {
   
   async syncParticipant(url: string, participant: Participant): Promise<ApiResponse> {
     try {
-      // Usamos el parámetro ?action=save en la URL y enviamos el body
-      const endpoint = `${url}?action=save`;
+      // Usamos el parámetro ?action=save y pasamos el id en la URL por si el script lo requiere
+      const endpoint = `${url}?action=save&id=${participant.id}`;
       
       // Para evitar problemas de CORS con GAS, usamos text/plain
+      // Enviamos el participante en múltiples formatos para máxima compatibilidad con cualquier versión del script
       const response = await fetch(endpoint, {
         method: 'POST',
-        body: JSON.stringify({ participant }),
+        body: JSON.stringify({ 
+          action: 'save', 
+          participant: participant, 
+          data: participant,
+          ...participant 
+        }),
         headers: {
           'Content-Type': 'text/plain;charset=utf-8',
         },
