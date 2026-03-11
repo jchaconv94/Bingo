@@ -16,7 +16,7 @@ export const SheetAPI = {
         const endpoint = `${url}?action=login`;
         const response = await fetch(endpoint, {
             method: 'POST',
-            body: JSON.stringify({ user, pass }),
+            body: JSON.stringify({ action: 'login', user: user.trim(), pass: pass.trim() }),
             headers: {
                 'Content-Type': 'text/plain;charset=utf-8',
             },

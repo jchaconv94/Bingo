@@ -34,7 +34,7 @@ const LS_KEYS = {
 };
 
 // URL por defecto proporcionada por el usuario
-const DEFAULT_SHEET_URL = "https://script.google.com/macros/s/AKfycby9q15moUkMOlwMbaiG_GZj0NthRpbXGxlhYBphcLscz3iu2Y8kxcbf1cvUSk2V4zxz2w/exec";
+const DEFAULT_SHEET_URL = "https://script.google.com/macros/s/AKfycbwwZi4WJVS4GueSLZ_rO140w5jLE67qjOSdMRJoSUADSNv9erRmvvzhqFrqWs-IhM7Kog/exec";
 
 const loadFromStorage = <T,>(key: string, fallback: T): T => {
   try {
@@ -57,19 +57,9 @@ const App: React.FC = () => {
 
   // --- Configuración de Nube ---
   const [sheetUrl, setSheetUrl] = useState<string>(() => {
-    const saved = loadFromStorage(LS_KEYS.SHEET_URL, '') as string;
-    
-    // MIGRACIÓN AGRESIVA: Si la URL es antigua o contiene patrones obsoletos, forzamos la nueva
-    const OLD_PATTERNS = ["IvqT-fj8qBUmC", "AL-bhqgGekPh98KhoGcmp", "v1/exec"];
-    const isOld = OLD_PATTERNS.some(p => saved.includes(p));
-
-    if (saved && isOld && saved !== DEFAULT_SHEET_URL) {
-      console.log("Forzando actualización de URL del backend...");
-      localStorage.setItem(LS_KEYS.SHEET_URL, JSON.stringify(DEFAULT_SHEET_URL));
-      return DEFAULT_SHEET_URL;
-    }
-
-    return saved || DEFAULT_SHEET_URL;
+    // Limpiamos la memoria local para forzar siempre la URL del código
+    localStorage.removeItem(LS_KEYS.SHEET_URL);
+    return DEFAULT_SHEET_URL;
   });
 
   // Auto Sync Config
@@ -151,7 +141,7 @@ const App: React.FC = () => {
   useEffect(() => { localStorage.setItem(LS_KEYS.PRIZES, JSON.stringify(prizes)); }, [prizes]);
   useEffect(() => { localStorage.setItem(LS_KEYS.TITLE, JSON.stringify(bingoTitle)); }, [bingoTitle]);
   useEffect(() => { localStorage.setItem(LS_KEYS.SUBTITLE, JSON.stringify(bingoSubtitle)); }, [bingoSubtitle]);
-  useEffect(() => { localStorage.setItem(LS_KEYS.SHEET_URL, JSON.stringify(sheetUrl)); }, [sheetUrl]);
+  // Ya no guardamos sheetUrl en localStorage para que siempre use la del código
   useEffect(() => { localStorage.setItem(LS_KEYS.AUTO_SYNC, JSON.stringify(autoSync)); }, [autoSync]);
   useEffect(() => { localStorage.setItem(LS_KEYS.SYNC_INTERVAL, JSON.stringify(syncInterval)); }, [syncInterval]);
   useEffect(() => { localStorage.setItem(LS_KEYS.CARD_PRICE, JSON.stringify(cardPrice)); }, [cardPrice]);
@@ -1092,19 +1082,23 @@ const App: React.FC = () => {
           onOpenSettings={() => setShowLoginConnection(true)}
         />
         {showLoginConnection && (
-          <ConnectionModal
-            currentUrl={sheetUrl}
-            currentAutoSync={autoSync}
-            currentInterval={syncInterval}
-            onSave={(url, newAutoSync, newInterval) => {
-              setSheetUrl(url);
-              setAutoSync(newAutoSync);
-              setSyncInterval(newInterval);
-              setShowLoginConnection(false);
-            }}
-            onClose={() => setShowLoginConnection(false)}
-            onSyncNow={() => { }} // Deshabilitado en login
-          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="w-full max-w-2xl h-[80vh] sm:h-auto sm:max-h-[90vh] bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex flex-col">
+              <ConnectionModal
+                currentUrl={sheetUrl}
+                currentAutoSync={autoSync}
+                currentInterval={syncInterval}
+                onSave={(url, newAutoSync, newInterval) => {
+                  setSheetUrl(url);
+                  setAutoSync(newAutoSync);
+                  setSyncInterval(newInterval);
+                  setShowLoginConnection(false);
+                }}
+                onClose={() => setShowLoginConnection(false)}
+                onSyncNow={() => { }} // Deshabilitado en login
+              />
+            </div>
+          </div>
         )}
       </>
     );
