@@ -1011,6 +1011,7 @@ const App: React.FC = () => {
               onShareAllCards={handleShareAllCards}
               prizes={prizes}
               totalCards={totalCards}
+              variant="drawer"
               onClose={() => setIsParticipantsDrawerOpen(false)}
             />
           </div>
@@ -1072,7 +1073,7 @@ const App: React.FC = () => {
       <Modal 
         isOpen={activeManagementModal === 'participants'} 
         onClose={() => setActiveManagementModal('none')}
-        maxWidth="max-w-5xl"
+        maxWidth="max-w-4xl"
         noPadding
       >
         <ParticipantsPanel

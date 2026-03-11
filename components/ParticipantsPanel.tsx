@@ -23,6 +23,7 @@ interface Props {
   prizes?: Prize[];
   totalCards?: number;
   onClose: () => void;
+  variant?: 'drawer' | 'modal';
 }
 
 const ParticipantsPanel: React.FC<Props> = ({ 
@@ -40,7 +41,8 @@ const ParticipantsPanel: React.FC<Props> = ({
   onShareAllCards,
   prizes = [],
   totalCards = 0,
-  onClose
+  onClose,
+  variant = 'modal'
 }) => {
   const { showAlert, showConfirm } = useAlert();
   const [search, setSearch] = useState('');
@@ -171,25 +173,40 @@ const ParticipantsPanel: React.FC<Props> = ({
       <div className="p-4 flex flex-col h-full overflow-hidden">
         <div className="flex flex-col gap-3 mb-3 flex-shrink-0">
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800/60">
-              <div className="flex items-center gap-3">
-                <h2 className="text-sm 2xl:text-[20px] font-bold text-white flex items-center gap-2">
-                  <Users className="text-emerald-500 w-[18px] h-[18px] 2xl:w-6 2xl:h-6" />
-                  Participantes
+            <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-800/60 gap-2">
+              <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+                <h2 className="text-base sm:text-base 2xl:text-[22px] font-black text-white flex items-center gap-2 tracking-wide truncate">
+                  <div className="p-1 sm:p-1.5 bg-emerald-500/20 rounded-lg border border-emerald-500/30 shrink-0 hidden sm:flex">
+                    <Users className="text-emerald-400 w-[14px] h-[14px] sm:w-[18px] sm:h-[18px] 2xl:w-6 2xl:h-6" />
+                  </div>
+                  <span className="truncate">Participantes</span>
                 </h2>
                 
-                <div className="flex flex-col bg-slate-800/80 border border-slate-700 rounded-md px-2 py-1 gap-1 min-w-[3rem]">
-                  <div className="flex items-center justify-between gap-2">
-                    <Users size={10} className="text-slate-400" />
-                    <span className="text-[10px] font-bold text-white leading-none">{participants.length}</span>
+                <div className="flex items-center bg-slate-900/80 backdrop-blur-md border border-slate-700/80 rounded-full px-2 sm:px-3 py-1 sm:py-1.5 gap-2 sm:gap-4 shadow-[inset_0_1px_4px_rgba(0,0,0,0.5)] shrink-0 ml-auto">
+                  <div className="flex items-center gap-1.5 group cursor-default">
+                    <div className="p-1.5 bg-cyan-500/10 rounded-full border border-cyan-500/20 shadow-[0_0_10px_rgba(6,182,212,0.1)] group-hover:bg-cyan-500/20 transition-all">
+                      <Users size={12} className="text-cyan-400" />
+                    </div>
+                    <div className="flex flex-col justify-center sm:gap-[3px]">
+                       <span className="hidden sm:block text-[9px] uppercase font-bold text-slate-500 tracking-wider leading-none">Total</span>
+                       <span className="text-[13px] sm:text-[14px] font-black text-cyan-50 leading-none">{participants.length}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <Ticket size={10} className="text-emerald-400" />
-                    <span className="text-[10px] font-bold text-emerald-400 leading-none">{totalCards}</span>
+                  
+                  <div className="w-[1px] h-4 sm:h-6 bg-gradient-to-b from-transparent via-slate-700 to-transparent"></div>
+                  
+                  <div className="flex items-center gap-1.5 group cursor-default">
+                    <div className="p-1.5 bg-emerald-500/10 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)] group-hover:bg-emerald-500/20 transition-all">
+                      <Ticket size={12} className="text-emerald-400" />
+                    </div>
+                    <div className="flex flex-col justify-center sm:gap-[3px]">
+                       <span className="hidden sm:block text-[9px] uppercase font-bold text-slate-500 tracking-wider leading-none">Cartones</span>
+                       <span className="text-[13px] sm:text-[14px] font-black text-emerald-300 leading-none">{totalCards}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <button onClick={onClose} className="p-2 bg-slate-800/80 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors border border-slate-700/50 shadow-sm">
+              <button onClick={onClose} className="p-2 h-fit bg-slate-800/80 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors border border-slate-700/50 shadow-sm shrink-0">
                 <X size={20} />
               </button>
             </div>
@@ -318,161 +335,91 @@ const ParticipantsPanel: React.FC<Props> = ({
              return (
               <div 
                 key={p.id} 
-                className={`relative bg-slate-900 rounded-xl border border-slate-800 hover:border-cyan-500/30 transition-all duration-300 shadow-sm group flex flex-col ${activeMenuId === p.id ? 'z-50' : 'z-0'}`}
+                className={`relative bg-slate-800 rounded-xl border border-slate-700/80 shadow-lg shadow-black/50 hover:border-cyan-500/50 hover:bg-slate-700/80 hover:shadow-cyan-900/30 transition-all duration-300 group flex flex-col ${activeMenuId === p.id ? 'z-50' : 'z-0'}`}
               >
-                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-slate-700 to-slate-800 group-hover:from-cyan-500 group-hover:to-blue-600 transition-colors duration-300 rounded-l-xl"></div>
+                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-slate-500 to-slate-600 group-hover:from-cyan-400 group-hover:to-blue-500 transition-colors duration-300 rounded-l-xl"></div>
 
-                <div className="p-2 pl-4 flex items-center gap-2 relative">
+                <div className="p-2.5 sm:p-3 pl-3 sm:pl-4 flex flex-row items-center justify-between gap-2 sm:gap-3 relative">
                   
-                  <div className="absolute top-2 right-2 flex items-center gap-1 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 shadow-inner">
-                     <Ticket size={10} className="text-emerald-500" />
-                     <span className="text-[10px] font-bold text-emerald-400 font-mono">{p.cards.length}</span>
-                  </div>
-
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 group-hover:border-cyan-500/50 flex items-center justify-center text-white font-bold text-base shadow-lg flex-shrink-0 transition-colors z-10">
-                    {String(p.name || '?').charAt(0).toUpperCase()}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0 pr-10">
-                    {isEditing ? (
-                      <div className="space-y-2 animate-in fade-in duration-200">
-                        <div className="grid grid-cols-2 gap-2">
-                          <input 
-                            value={editForm.name} 
-                            onChange={e => setEditForm({...editForm, name: e.target.value})}
-                            className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[10px] text-white w-full focus:border-cyan-500 outline-none"
-                            placeholder="Nombre"
-                          />
-                          <input 
-                            value={editForm.surname} 
-                            onChange={e => setEditForm({...editForm, surname: e.target.value})}
-                            className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[10px] text-white w-full focus:border-cyan-500 outline-none"
-                            placeholder="Apellido"
-                          />
+                  <div 
+                    className={`flex items-center gap-3 flex-1 min-w-0 ${!isEditing ? 'cursor-pointer hover:brightness-110 transition-all' : ''}`}
+                    onClick={() => { if (!isEditing) setViewingParticipantId(p.id); }}
+                    title={!isEditing ? "Ver Detalles del Participante" : ""}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 border-2 border-slate-600 group-hover:border-cyan-500/50 flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0 transition-colors z-10">
+                      {String(p.name || '?').charAt(0).toUpperCase()}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      {isEditing ? (
+                        <div className="space-y-2 animate-in fade-in duration-200" onClick={e => e.stopPropagation()}>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input 
+                              value={editForm.name} 
+                              onChange={e => setEditForm({...editForm, name: e.target.value})}
+                              className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[10px] text-white w-full focus:border-cyan-500 outline-none"
+                              placeholder="Nombre"
+                            />
+                            <input 
+                              value={editForm.surname} 
+                              onChange={e => setEditForm({...editForm, surname: e.target.value})}
+                              className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[10px] text-white w-full focus:border-cyan-500 outline-none"
+                              placeholder="Apellido"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                             <input 
+                              value={editForm.dni} 
+                              onChange={e => setEditForm({...editForm, dni: e.target.value})}
+                              className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[10px] text-white w-full focus:border-cyan-500 outline-none"
+                              placeholder="DNI"
+                            />
+                             <input 
+                              value={editForm.phone} 
+                              onChange={e => setEditForm({...editForm, phone: e.target.value})}
+                              className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[10px] text-white w-full focus:border-cyan-500 outline-none"
+                              placeholder="Teléfono"
+                            />
+                          </div>
+                          <div className="flex gap-2 justify-end pt-1">
+                            <button onClick={saveEdit} className="flex items-center gap-1 px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold transition-colors shadow-lg shadow-emerald-900/20">
+                              <Save size={10} /> Guardar
+                            </button>
+                            <button onClick={cancelEdit} className="flex items-center gap-1 px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold transition-colors">
+                              <X size={10} />
+                            </button>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                           <input 
-                            value={editForm.dni} 
-                            onChange={e => setEditForm({...editForm, dni: e.target.value})}
-                            className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[10px] text-white w-full focus:border-cyan-500 outline-none"
-                            placeholder="DNI"
-                          />
-                           <input 
-                            value={editForm.phone} 
-                            onChange={e => setEditForm({...editForm, phone: e.target.value})}
-                            className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[10px] text-white w-full focus:border-cyan-500 outline-none"
-                            placeholder="Teléfono"
-                          />
-                        </div>
-                        <div className="flex gap-2 justify-end pt-1">
-                          <button onClick={saveEdit} className="flex items-center gap-1 px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold transition-colors shadow-lg shadow-emerald-900/20">
-                            <Save size={10} /> Guardar
-                          </button>
-                          <button onClick={cancelEdit} className="flex items-center gap-1 px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold transition-colors">
-                            <X size={10} />
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col justify-center h-full gap-1.5">
-                        <h3 
-                          className={`text-sm font-bold text-white truncate leading-tight ${hideParticipants ? 'blur-sm select-none' : ''}`}
-                          title={`${p.name} ${p.surname}`}
-                        >
-                          {p.name} {p.surname}
-                        </h3>
-                        
-                        <div className={`flex flex-wrap gap-2 ${hideParticipants ? 'blur-sm select-none' : ''}`}>
-                          <span className="flex items-center gap-1.5 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[9px] text-slate-400 font-medium" title="DNI">
-                            <Fingerprint size={10} className="text-slate-500"/> 
-                            {p.dni}
-                          </span>
-                          {p.phone && (
-                            <span className="flex items-center gap-1.5 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[9px] text-slate-400 font-medium" title="Teléfono">
-                              <Phone size={10} className="text-slate-500"/> 
-                              {p.phone}
-                            </span>
+                      ) : (
+                        <div className="flex flex-col justify-center gap-0 leading-none">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <h3 
+                              className={`text-[14px] sm:text-[16px] font-black text-white truncate ${hideParticipants ? 'blur-sm select-none' : ''}`}
+                              title={p.name}
+                            >
+                              {p.name}
+                            </h3>
+                            <div className={`flex items-center gap-1 bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/50 shadow-inner shrink-0 ${hideParticipants ? 'blur-sm select-none' : ''}`} title={`${p.cards.length} cartones`}>
+                              <Ticket size={11} className="text-emerald-500" />
+                              <span className="text-[11px] font-bold text-emerald-400 font-mono">{p.cards.length}</span>
+                            </div>
+                          </div>
+                          {p.surname && (
+                            <p 
+                              className={`text-[11px] sm:text-[13px] font-bold text-slate-400 truncate mt-0.5 ${hideParticipants ? 'blur-sm select-none' : ''}`}
+                              title={p.surname}
+                            >
+                              {p.surname}
+                            </p>
                           )}
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-                
-                {!isEditing && (
-                  <div className="bg-slate-950/30 border-t border-slate-800 pl-4 pr-2 py-1 flex items-center justify-between gap-1.5">
-                    
-                    <button 
-                      onClick={() => toggleIndividualCard(p.id)}
-                      className={`
-                        p-1.5 rounded-lg transition-all flex items-center justify-center gap-1 border
-                        ${isExpanded 
-                          ? 'text-cyan-400 bg-cyan-950/20 border-cyan-900/30' 
-                          : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300 border-slate-700'
-                        }
-                      `}
-                      title={isExpanded ? "Ocultar cartones" : "Ver cartones"}
-                    >
-                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    </button>
-
-                    <div className="h-3 w-px bg-slate-800 mx-0.5"></div>
-
-                    <div className="flex items-center gap-1.5">
-                       {p.phone && p.cards.length > 1 && (
-                          <button 
-                            onClick={() => onShareAllCards && onShareAllCards(p)}
-                            className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/30 rounded-lg transition-colors border border-slate-700"
-                            title="Compartir Todo"
-                          >
-                            <FileText size={16} />
-                          </button>
-                       )}
-
-                       <button 
-                        onClick={() => setViewingParticipantId(p.id)}
-                        className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/30 rounded-lg transition-colors border border-slate-700"
-                        title="Ver Detalles"
-                      >
-                        <ScanEye size={16} />
-                      </button>
-
-                      {/* Dropdown for Edit and Delete */}
-                      <div className="relative">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveMenuId(activeMenuId === p.id ? null : p.id);
-                          }}
-                          className={`p-2 rounded-lg transition-colors border ${activeMenuId === p.id ? 'bg-slate-800 text-white border-cyan-500/50' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 border-slate-700'}`}
-                          title="Opciones"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-                        <div className={`absolute right-0 top-full mt-2 w-32 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-[100] ${activeMenuId === p.id ? 'animate-in fade-in zoom-in-95 duration-200' : 'hidden'}`}>
-                          <button 
-                            onClick={() => {
-                              startEdit(p);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full text-left px-4 py-2 text-xs text-amber-400 hover:bg-amber-950/30 flex items-center gap-2"
-                          >
-                            <Edit2 size={14} /> Editar
-                          </button>
-                          <button 
-                            onClick={() => {
-                              onDeleteParticipant(p.id);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full text-left px-4 py-2 text-xs text-rose-400 hover:bg-rose-950/30 flex items-center gap-2"
-                          >
-                            <Trash2 size={14} /> Eliminar
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="w-px h-6 bg-slate-800 mx-0.5"></div>
-
+                  
+                  {!isEditing && (
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                       
                       <button 
                         onClick={async () => {
                            const confirm = await showConfirm({ 
@@ -485,18 +432,79 @@ const ParticipantsPanel: React.FC<Props> = ({
                                onAddCard(p.id);
                            }
                         }}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-500 hover:text-emerald-400 border border-emerald-500/20 transition-all shadow-sm"
+                        className="h-8 sm:h-9 flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all shadow-sm shrink-0"
                         title="Agregar cartón extra"
                       >
-                        <Ticket size={16} /> 
-                        <span className="text-[10px] font-bold">+1</span>
+                        <Ticket size={14} className="sm:w-[15px] sm:h-[15px]" /> 
+                        <span className="text-[11px] font-bold">+1</span>
+                      </button>
+
+                      <div className="hidden sm:block w-px h-6 bg-slate-700 mx-0.5"></div>
+
+                      {/* Dropdown for Edit and Delete */}
+                      <div className="relative">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(activeMenuId === p.id ? null : p.id);
+                          }}
+                          className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg transition-all border ${activeMenuId === p.id ? 'bg-slate-800 text-white border-slate-600 shadow-sm' : 'text-slate-400 hover:bg-slate-700 hover:text-slate-200 border-slate-700/50 sm:border-slate-700 bg-slate-800/80 sm:bg-slate-900/50'}`}
+                          title="Opciones"
+                        >
+                          <MoreVertical size={15} />
+                        </button>
+                          <div className={`absolute right-0 top-full mt-2 w-44 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-[100] ${activeMenuId === p.id ? 'animate-in fade-in zoom-in-95 duration-200' : 'hidden'}`}>
+                          {p.phone && p.cards.length > 1 && (
+                            <button 
+                              onClick={() => {
+                                onShareAllCards && onShareAllCards(p);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full text-left px-4 py-2 text-xs text-emerald-400 hover:bg-emerald-950/30 flex items-center gap-2 transition-colors"
+                            >
+                              <FileText size={14} /> Enviar cartones
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => {
+                              startEdit(p);
+                              setActiveMenuId(null);
+                            }}
+                            className="w-full text-left px-4 py-2 text-xs text-amber-400 hover:bg-amber-950/30 flex items-center gap-2 transition-colors"
+                          >
+                            <Edit2 size={14} /> Editar participante
+                          </button>
+                          <button 
+                            onClick={() => {
+                              onDeleteParticipant(p.id);
+                              setActiveMenuId(null);
+                            }}
+                            className="w-full text-left px-4 py-2 text-xs text-rose-400 hover:bg-rose-950/30 flex items-center gap-2 transition-colors"
+                          >
+                            <Trash2 size={14} /> Eliminar participante
+                          </button>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => toggleIndividualCard(p.id)}
+                        className={`
+                          w-8 h-8 sm:w-9 sm:h-9 rounded-lg transition-all flex items-center justify-center border
+                          ${isExpanded 
+                            ? 'text-cyan-400 bg-cyan-950/40 border-cyan-500/30' 
+                            : 'text-slate-400 hover:bg-slate-700 hover:text-slate-200 border-slate-700/50 sm:border-slate-700 bg-slate-800/80 sm:bg-slate-900/50'
+                          }
+                        `}
+                        title={isExpanded ? "Ocultar cartones" : "Ver cartones"}
+                      >
+                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </button>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
                 
                 {isExpanded && (
-                  <div className="p-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 animate-in slide-in-from-top-2 duration-200 border-t border-slate-800 bg-slate-950/50 shadow-inner rounded-b-xl">
+                  <div className={`p-2 grid gap-1 sm:gap-1.5 animate-in slide-in-from-top-2 duration-200 border-t border-slate-700/80 bg-slate-950/40 shadow-inner rounded-b-xl ${variant === 'drawer' ? 'grid-cols-2 2xl:grid-cols-3' : 'grid-cols-2 md:grid-cols-3'}`}>
                     {p.cards.map(card => (
                       <BingoCard 
                         key={card.id}
@@ -506,7 +514,8 @@ const ParticipantsPanel: React.FC<Props> = ({
                         onDownload={(cid) => onDownloadCard(p, cid)}
                         onShare={onShareCard ? (cid) => onShareCard(p, cid) : undefined}
                         hasPhone={!!p.phone}
-                        isCompact={true}
+                        isPanelVariant={variant === 'drawer'}
+                        isCompact={variant === 'modal'}
                         currentPattern={currentPattern}
                       />
                     ))}

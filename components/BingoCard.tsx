@@ -12,6 +12,7 @@ interface Props {
   onShare?: (id: string) => void;
   hasPhone?: boolean;
   isCompact?: boolean;
+  isPanelVariant?: boolean;
   currentPattern?: PatternKey; // Optional, defaults to FULL if not provided
   readOnly?: boolean;
 }
@@ -24,6 +25,7 @@ const BingoCard: React.FC<Props> = ({
   onShare,
   hasPhone = false,
   isCompact = false, 
+  isPanelVariant = false,
   currentPattern = 'FULL',
   readOnly = false
 }) => {
@@ -59,7 +61,7 @@ const BingoCard: React.FC<Props> = ({
   return (
     <div className={`
       relative overflow-hidden transition-all duration-300 flex flex-col shadow-xl
-      ${isCompact ? 'rounded-lg' : 'rounded-2xl'}
+      ${isPanelVariant ? 'rounded-none' : isCompact ? 'rounded-lg' : 'rounded-2xl'}
       ${isInvalid 
          ? 'bg-slate-950 border-2 border-rose-900/50 grayscale opacity-70'
          : isWinner 
@@ -80,26 +82,26 @@ const BingoCard: React.FC<Props> = ({
       {/* Top Bar: ID and Actions */}
       <div className={`
         flex flex-col bg-slate-950 border-b border-slate-800
-        ${isCompact ? 'p-1' : 'p-3'}
+        ${isPanelVariant ? 'p-0.5' : isCompact ? 'p-1' : 'p-3'}
       `}>
         <div className="flex items-start justify-between w-full">
           <div className="flex flex-col leading-none">
-            <span className={`uppercase font-bold text-slate-500 tracking-widest ${isCompact ? 'text-[7px]' : 'text-[9px]'}`}>
+            <span className={`uppercase font-bold text-slate-500 tracking-widest ${isPanelVariant ? 'text-[8px]' : isCompact ? 'text-[8px] sm:text-[9px]' : 'text-[9px]'}`}>
               Cartón N°
             </span>
-            <span className={`font-mono font-black tracking-tight ${isInvalid ? 'text-rose-900' : 'text-white'} ${isCompact ? 'text-base' : 'text-2xl'}`}>
+            <span className={`font-mono font-black tracking-tight ${isInvalid ? 'text-rose-900' : 'text-white'} ${isPanelVariant ? 'text-[13px]' : isCompact ? 'text-lg' : 'text-2xl'}`}>
               {card.id}
             </span>
           </div>
 
           <div className={`flex flex-col items-end gap-0.5`}>
             {isWinner && (
-              <div className={`font-black uppercase bg-amber-500 text-slate-950 rounded px-1 py-0.5 animate-pulse ${isCompact ? 'text-[7px]' : 'text-xs'}`}>
+              <div className={`font-black uppercase bg-amber-500 text-slate-950 rounded px-1 animate-pulse ${isPanelVariant ? 'text-[5px] py-0' : isCompact ? 'text-[7px] py-0.5' : 'text-xs py-0.5'}`}>
                 WINNER
               </div>
             )}
             {isInvalid && (
-               <div className={`font-black uppercase bg-rose-900 text-rose-400 rounded px-1 py-0.5 ${isCompact ? 'text-[7px]' : 'text-xs'}`}>
+               <div className={`font-black uppercase bg-rose-900 text-rose-400 rounded px-1 ${isPanelVariant ? 'text-[5px] py-0' : isCompact ? 'text-[7px] py-0.5' : 'text-xs py-0.5'}`}>
                   VOID
                </div>
             )}
@@ -107,49 +109,49 @@ const BingoCard: React.FC<Props> = ({
         </div>
 
         {!readOnly && (
-          <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-slate-800/50 w-full relative z-50">
+          <div className={`flex items-center w-full relative z-50 border-t border-slate-800/50 ${isPanelVariant ? 'gap-1 mt-1 pt-1' : 'gap-1 mt-1.5 pt-1.5'}`}>
             {hasPhone && onShare && (
               <button 
                 onClick={() => onShare(card.id)} 
-                className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-slate-900 text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/50 border border-slate-800 hover:border-emerald-900/50 transition-colors text-[8px] font-bold uppercase tracking-wider"
+                className={`flex-1 flex items-center justify-center bg-slate-900 text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/50 border border-slate-800 hover:border-emerald-900/50 transition-colors font-bold uppercase tracking-wider ${isPanelVariant ? 'gap-0.5 py-1.5 text-[6px] rounded-[3px]' : 'gap-1 py-2 rounded-md text-[8px]'}`}
                 title="Enviar a WhatsApp"
               >
-                <MessageCircle size={12} />
-                {!isCompact && <span>Enviar</span>}
+                <MessageCircle size={isPanelVariant ? 10 : 12} />
+                {!isCompact && !isPanelVariant && <span>Enviar</span>}
               </button>
             )}
             <button 
               onClick={() => onDownload(card.id)} 
-              className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-slate-900 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/50 border border-slate-800 hover:border-cyan-900/50 transition-colors text-[8px] font-bold uppercase tracking-wider"
+              className={`flex-1 flex items-center justify-center bg-slate-900 text-slate-400 hover:text-cyan-400 hover:bg-cyan-950/50 border border-slate-800 hover:border-cyan-900/50 transition-colors font-bold uppercase tracking-wider ${isPanelVariant ? 'gap-0.5 py-1.5 text-[6px] rounded-[3px]' : 'gap-1 py-2 rounded-md text-[8px]'}`}
               title="Descargar Imagen"
             >
-              <Download size={12} />
-              {!isCompact && <span>Guardar</span>}
+              <Download size={isPanelVariant ? 10 : 12} />
+              {!isCompact && !isPanelVariant && <span>Guardar</span>}
             </button>
             <button 
               onClick={() => onDelete(card.id)} 
-              className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-slate-900 text-slate-400 hover:text-rose-400 hover:bg-rose-950/50 border border-slate-800 hover:border-rose-900/50 transition-colors text-[8px] font-bold uppercase tracking-wider"
+              className={`flex-1 flex items-center justify-center bg-slate-900 text-slate-400 hover:text-rose-400 hover:bg-rose-950/50 border border-slate-800 hover:border-rose-900/50 transition-colors font-bold uppercase tracking-wider ${isPanelVariant ? 'gap-0.5 py-1.5 text-[6px] rounded-[3px]' : 'gap-1 py-2 rounded-md text-[8px]'}`}
               title="Eliminar"
             >
-              <Trash2 size={12} />
-              {!isCompact && <span>Borrar</span>}
+              <Trash2 size={isPanelVariant ? 10 : 12} />
+              {!isCompact && !isPanelVariant && <span>Borrar</span>}
             </button>
           </div>
         )}
       </div>
 
       {/* Main Content Area */}
-      <div className={`${isCompact ? 'p-1' : 'p-4'} flex-1 flex flex-col bg-slate-900/50`}>
+      <div className={`${isPanelVariant ? 'p-0.5' : isCompact ? 'p-1.5 sm:p-2' : 'p-4'} flex-1 flex flex-col bg-slate-900/50`}>
         
         {/* BINGO Header with Colored Pills */}
-        <div className={`grid grid-cols-5 ${isCompact ? 'gap-0.5 mb-1' : 'gap-2 mb-3'}`}>
+        <div className={`grid grid-cols-5 ${isPanelVariant ? 'gap-0.5 mb-1' : isCompact ? 'gap-1 mb-2' : 'gap-2 mb-3'}`}>
            {headers.map((h, i) => (
              <div 
                key={i} 
                className={`
-                 flex items-center justify-center font-black rounded-md border shadow-sm select-none
+                 aspect-square flex items-center justify-center font-black rounded-[2px] sm:rounded-md border shadow-sm select-none
                  ${isInvalid ? 'bg-slate-800 border-slate-700 text-slate-600' : `${h.bg} ${h.border} ${h.color}`}
-                 ${isCompact ? 'text-[12px] py-0.5' : 'text-2xl py-1'}
+                 ${isPanelVariant ? 'text-[9px]' : isCompact ? 'text-sm sm:text-[17px]' : 'text-2xl'}
                `}
              >
                {h.letter}
@@ -158,7 +160,7 @@ const BingoCard: React.FC<Props> = ({
         </div>
 
         {/* Numbers Grid 5x5 */}
-        <div className={`grid grid-cols-5 ${isCompact ? 'gap-0.5 text-[13px]' : 'gap-2 text-base'}`}>
+        <div className={`grid grid-cols-5 ${isPanelVariant ? 'gap-px text-[10px]' : isCompact ? 'gap-1 text-[15px] sm:text-base' : 'gap-2 text-base'}`}>
           {card.numbers.map((number, index) => {
             const isCenter = index === 12;
             const isMarked = drawnBalls.includes(number);
@@ -171,7 +173,7 @@ const BingoCard: React.FC<Props> = ({
             if (isInvalid) {
                cellStyle = "bg-slate-900 border-slate-800 text-slate-700";
                if (isCenter) {
-                  content = <Ban size={isCompact ? 14 : 24} className="text-slate-700" />;
+                  content = <Ban size={isPanelVariant ? 10 : isCompact ? 18 : 24} className="text-slate-700" />;
                }
             } else {
                // Normal Logic
@@ -182,7 +184,7 @@ const BingoCard: React.FC<Props> = ({
                       : "text-slate-600";
                    
                    cellStyle = "bg-slate-800/80 border-slate-700";
-                   content = <Star fill="currentColor" size={isCompact ? 12 : 24} className={activeClass} />;
+                   content = <Star fill="currentColor" size={isPanelVariant ? 8 : isCompact ? 16 : 24} className={activeClass} />;
                 } else if (isMarked) {
                    // Marked Number
                    if (isRequiredByPattern) {
@@ -208,9 +210,9 @@ const BingoCard: React.FC<Props> = ({
               <div
                 key={index}
                 className={`
-                  aspect-square flex items-center justify-center rounded-md border transition-all duration-300 cursor-default
+                  aspect-square flex items-center justify-center rounded-[3px] sm:rounded-md border transition-all duration-300 cursor-default
                   ${cellStyle}
-                  ${isCompact ? 'font-bold' : ''}
+                  ${isCompact || isPanelVariant ? 'font-bold' : ''}
                 `}
               >
                 {content}
@@ -222,7 +224,7 @@ const BingoCard: React.FC<Props> = ({
       
       {/* Footer Info */}
       <div className={`
-        ${isCompact ? 'px-1.5 py-0.5 text-[8px]' : 'px-4 py-2 text-xs'} 
+        ${isPanelVariant ? 'px-1.5 py-0.5 text-[9px]' : isCompact ? 'px-1.5 py-0.5 text-[8px]' : 'px-4 py-2 text-xs'} 
         bg-slate-950 border-t border-slate-800 flex justify-between items-center font-medium text-slate-500
       `}>
          <span className="uppercase tracking-wider truncate max-w-[70%]">{WIN_PATTERNS[currentPattern].label}</span>
