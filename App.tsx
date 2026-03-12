@@ -1052,11 +1052,30 @@ const App: React.FC = () => {
     setCurrentBatchWinners([]);
     setPrizes([]);
 
-    // Restore cards validity locally
-    setParticipants(prev => prev.map(p => ({
-      ...p,
-      cards: p.cards.map(c => ({ ...c, isInvalid: false }))
-    })));
+    // Restore cards validity locally and sync affected participants
+    const affectedParticipants = participants.filter(p => p.cards.some(c => c.isInvalid || c.isRetired));
+    
+    if (affectedParticipants.length > 0) {
+      const updatedParticipants = participants.map(p => ({
+        ...p,
+        cards: p.cards.map(c => ({ ...c, isInvalid: false, isRetired: false }))
+      }));
+      setParticipants(updatedParticipants);
+
+      // Sync affected participants in background
+      if (sheetUrl) {
+        const syncAffected = async () => {
+          for (const p of affectedParticipants) {
+            const updatedP = {
+              ...p,
+              cards: p.cards.map(c => ({ ...c, isInvalid: false, isRetired: false }))
+            };
+            await SheetAPI.syncParticipant(sheetUrl, updatedP);
+          }
+        };
+        syncAffected();
+      }
+    }
 
     addLog("♻️ Evento reseteado completamente.");
   };

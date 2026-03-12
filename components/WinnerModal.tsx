@@ -65,61 +65,68 @@ const WinnerModal: React.FC<Props> = ({ winners, onClose, onViewDetails, onConfi
              </div>
           </div>
 
-          <div className="p-6 pt-2 overflow-y-auto custom-scrollbar flex-1">
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar py-2">
+          <div className="p-4 sm:p-6 pt-2 overflow-y-auto custom-scrollbar flex-1">
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar py-2">
               {winners.map((w, idx) => (
                 <div 
                   key={idx} 
-                  className="bg-[#0f172a] border border-slate-800/50 rounded-xl flex items-stretch overflow-hidden hover:border-slate-700 transition-all group"
+                  onClick={() => onViewDetails(w)}
+                  className="bg-[#0f172a] border border-slate-800/50 rounded-xl flex items-stretch overflow-hidden hover:border-slate-700 hover:bg-slate-800/30 transition-all group cursor-pointer"
                 >
                   {/* Badge de Premio (Izquierda) */}
-                  <div className="w-24 flex-shrink-0 bg-gradient-to-b from-amber-400 to-orange-500 p-3 flex flex-col items-center justify-center gap-0.5">
-                    <span className="text-[9px] font-black text-black/60 uppercase leading-none">PREMIO</span>
-                    <span className="text-sm font-black text-black leading-none text-center">
+                  <div className="w-20 sm:w-24 flex-shrink-0 bg-gradient-to-b from-amber-400 to-orange-500 p-2 sm:p-3 flex flex-col items-center justify-center gap-0.5">
+                    <span className="text-[8px] sm:text-[9px] font-black text-black/60 uppercase leading-none">PREMIO</span>
+                    <span className="text-xs sm:text-sm font-black text-black leading-none text-center">
                       {w.prizeDescription || w.prizeName || 'Bingo'}
                     </span>
                   </div>
 
                   {/* Contenido Central */}
-                  <div className="flex-1 p-4 flex flex-col justify-center min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <h4 className="text-white font-bold text-base truncate tracking-tight">
+                  <div className="flex-1 p-3 sm:p-4 flex flex-col justify-center min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
+                      <h4 className="text-white font-bold text-sm sm:text-base truncate tracking-tight">
                         {w.participantName}
                       </h4>
-                      <span className="text-[10px] text-slate-500 font-medium">
+                      <span className="text-[9px] sm:text-[10px] text-slate-500 font-medium shrink-0">
                         {new Date(w.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 flex items-center gap-2">
-                        <Ticket size={12} className="text-emerald-500/70" />
-                        <span className="text-[11px] font-mono text-emerald-400 font-bold">{w.cardId}</span>
+                    <div className="flex items-center gap-1.5 sm:gap-3">
+                      <div className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md bg-slate-950 border border-slate-800 flex items-center gap-1 sm:gap-2">
+                        <Ticket size={10} className="text-emerald-500/70 sm:w-[12px] sm:h-[12px]" />
+                        <span className="text-[10px] sm:text-[11px] font-mono text-emerald-400 font-bold">{w.cardId}</span>
                       </div>
-                      <div className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full bg-amber-500 text-[9px] flex items-center justify-center text-black font-black">
+                      <div className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md bg-slate-950 border border-slate-800 flex items-center gap-1 sm:gap-2">
+                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-amber-500 text-[8px] sm:text-[9px] flex items-center justify-center text-black font-black">
                           {w.winningNumber}
                         </div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Bolilla</span>
+                        <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase">Bola</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Botones de Acción (Derecha) */}
-                  <div className="flex-shrink-0 flex items-center gap-2 pr-4">
+                  <div className="flex-shrink-0 flex items-center gap-1 sm:gap-2 pr-2 sm:pr-4">
                     <button
-                      onClick={() => onViewDetails(w)}
-                      className="w-10 h-10 rounded-xl bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-500 hover:bg-cyan-500/10 hover:text-cyan-500 hover:border-cyan-500/30 transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDetails(w);
+                      }}
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-500 hover:bg-cyan-500/10 hover:text-cyan-500 hover:border-cyan-500/30 transition-all"
                       title="Ver detalles"
                     >
-                      <Eye size={18} />
+                      <Eye size={16} className="sm:w-[18px] sm:h-[18px]" />
                     </button>
                     <button
-                      onClick={() => handleReject(w)}
-                      className="w-10 h-10 rounded-xl bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-500 hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/30 transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleReject(w);
+                      }}
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-500 hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/30 transition-all"
                       title="Invalidar"
                     >
-                      <UserX size={18} />
+                      <UserX size={16} className="sm:w-[18px] sm:h-[18px]" />
                     </button>
                   </div>
                 </div>

@@ -152,7 +152,7 @@ const GamePanel: React.FC<Props> = ({
     setIsAnimating(true);
 
     // Animation config
-    let duration = 3000;
+    let duration = 5000;
     let intervalTime = 60;
     let elapsed = 0;
 
