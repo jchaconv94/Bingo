@@ -89,31 +89,37 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, totalParticipants, tot
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-40 h-40 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
 
-      {/* Header - Simplified */}
-      <div className="flex items-center justify-between relative z-10 shrink-0">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <div className="p-2 bg-cyan-500/10 rounded-lg border border-cyan-500/20 text-cyan-400">
-            <UserPlus size={18} />
+      {/* Header */}
+      <div className="flex items-center justify-between pb-4 border-b border-slate-800/60 relative z-10 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2 sm:p-2.5 bg-cyan-500/10 rounded-xl border border-cyan-500/20 text-cyan-400 shadow-lg shadow-cyan-900/10">
+            <UserPlus size={20} />
           </div>
-          Nuevo Jugador
-        </h2>
-        <button onClick={onClose} className="p-2 bg-slate-800/80 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors border border-slate-700/50 shadow-sm">
-          <X size={18} />
-        </button>
+          <h2 className="text-lg sm:text-2xl font-black text-white uppercase tracking-tight">
+            NUEVO JUGADOR
+          </h2>
+        </div>
+
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-3 bg-slate-800/40 px-3 py-1.5 rounded-xl border border-slate-700/30">
+            <div className="flex items-center gap-1.5" title="Total Jugadores">
+              <User size={14} className="text-slate-400" />
+              <span className="text-sm font-black text-white leading-none">{totalParticipants}</span>
+            </div>
+            <div className="w-px h-3 bg-slate-700"></div>
+            <div className="flex items-center gap-1.5" title="Total Cartones">
+              <Ticket size={14} className="text-emerald-400" />
+              <span className="text-sm font-black text-emerald-400 leading-none">{totalCards}</span>
+            </div>
+          </div>
+          
+          <button onClick={onClose} className="p-2 bg-slate-800/80 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors border border-slate-700/50 shadow-sm">
+            <X size={20} />
+          </button>
+        </div>
       </div>
 
-      {/* Stats - Compact */}
-      <div className="flex items-center justify-between bg-slate-800/30 p-3 rounded-xl border border-slate-700/30 relative z-10 shrink-0">
-        <div className="flex flex-col">
-          <span className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Jugadores</span>
-          <span className="text-lg font-black text-white leading-none">{totalParticipants}</span>
-        </div>
-        <div className="w-px h-8 bg-slate-700/50"></div>
-        <div className="flex flex-col items-end">
-          <span className="text-[9px] font-bold uppercase text-emerald-500 tracking-wider">Cartones</span>
-          <span className="text-lg font-black text-emerald-400 leading-none">{totalCards}</span>
-        </div>
-      </div>
+
 
       <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 relative z-10">
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-4 pb-10">
@@ -274,20 +280,58 @@ const RegistrationPanel: React.FC<Props> = ({ onRegister, totalParticipants, tot
               </div>
 
               {formData.paymentStatus === 'debt' && (
-                <div className="mt-2 relative animate-in slide-in-from-top-2 duration-200 fade-in">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-rose-500/70 font-bold">
-                    <DollarSign size={18} />
+                <div className="mt-2 bg-rose-500/5 rounded-3xl p-5 border border-rose-500/20 backdrop-blur-sm relative overflow-hidden group/debt animate-in slide-in-from-top-4 duration-300">
+                  {/* Subtle background glow */}
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-rose-500/5 rounded-full blur-3xl group-hover/debt:bg-rose-500/10 transition-colors duration-500"></div>
+                  
+                  <div className="flex items-center justify-between mb-4 relative z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]">
+                        <DollarSign size={24} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em] leading-none mb-1">Monto de</span>
+                        <span className="text-base uppercase font-black text-white tracking-wider leading-none">Deuda Total</span>
+                      </div>
+                    </div>
+                    <div className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-[10px] font-bold text-rose-400/80 tracking-widest uppercase flex items-center gap-1.5">
+                      <AlertCircle size={10} />
+                      Pendiente
+                    </div>
                   </div>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                    value={formData.debtAmount}
-                    onChange={e => setFormData({ ...formData, debtAmount: e.target.value })}
-                    className="w-full bg-slate-950/80 border border-rose-500/30 rounded-xl pl-12 pr-4 py-3 sm:py-4 text-base text-white placeholder-slate-700 focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 outline-none transition-all shadow-sm font-mono"
-                    placeholder="Monto a deber..."
-                  />
+
+                  <div className="flex items-center justify-between bg-slate-950/50 rounded-2xl p-2 border border-slate-800/50 relative z-10">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, debtAmount: Math.max(0, Number(formData.debtAmount) - cardPrice)})}
+                      className="w-14 h-14 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-slate-500 hover:text-white transition-all active:scale-90 shadow-lg"
+                    >
+                      <Minus size={20} />
+                    </button>
+                    
+                    <div className="flex-1 flex flex-col items-center justify-center">
+                      <div className="flex items-center text-rose-500 font-black text-xl mr-1 opacity-50 absolute translate-x-[-45px]">S/.</div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        required
+                        value={formData.debtAmount}
+                        onChange={e => setFormData({ ...formData, debtAmount: e.target.value })}
+                        className="w-full bg-transparent text-4xl font-black text-white text-center border-none focus:ring-0 p-0 h-auto placeholder-slate-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none drop-shadow-[0_0_10px_rgba(244,63,94,0.3)]"
+                        placeholder="0.00"
+                      />
+                      <div className="w-12 h-1 bg-rose-500/30 rounded-full mt-1"></div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, debtAmount: Number(formData.debtAmount) + cardPrice})}
+                      className="w-14 h-14 rounded-xl bg-rose-600/10 hover:bg-rose-600/20 border border-rose-500/20 flex items-center justify-center text-rose-500 hover:text-rose-400 transition-all active:scale-90 shadow-lg"
+                    >
+                      <Plus size={20} />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

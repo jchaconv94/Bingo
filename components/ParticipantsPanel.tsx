@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Users, Medal, Ticket, Edit2, Trash2, Save, X, Eye, EyeOff, CreditCard, ChevronDown, ChevronUp, ScanEye, Phone, Fingerprint, MessageCircle, FileText, MoreVertical } from 'lucide-react';
+import { Search, Users, Medal, Ticket, Edit2, Trash2, Save, X, Eye, EyeOff, CreditCard, ChevronDown, ChevronUp, ScanEye, Phone, Fingerprint, MessageCircle, FileText, MoreVertical, ChevronRight } from 'lucide-react';
 import { Participant, Winner, BingoCard as BingoCardType, PatternKey, Prize } from '../types.ts';
 import BingoCard from './BingoCard.tsx';
 import WinnerDetailsModal from './WinnerDetailsModal.tsx';
@@ -176,7 +176,7 @@ const ParticipantsPanel: React.FC<Props> = ({
         />
       )}
 
-      <div className="p-4 flex flex-col h-full overflow-hidden">
+      <div className="p-4 flex flex-col h-full relative">
         <div className="flex flex-col gap-3 mb-3 flex-shrink-0">
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-800/60 gap-2">
@@ -212,10 +212,25 @@ const ParticipantsPanel: React.FC<Props> = ({
                   </div>
                 </div>
               </div>
-              <button onClick={onClose} className="p-2 h-fit bg-slate-800/80 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors border border-slate-700/50 shadow-sm shrink-0">
+              
+              <button 
+                onClick={onClose} 
+                className={`p-2 h-fit bg-slate-800/80 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors border border-slate-700/50 shadow-sm shrink-0 ${variant === 'drawer' ? 'lg:hidden' : ''}`}
+              >
                 <X size={20} />
               </button>
             </div>
+
+            {/* Retractable arrow for Desktop Drawer variant */}
+            {variant === 'drawer' && (
+              <button
+                onClick={onClose}
+                className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 z-[200] translate-x-[-100%] bg-slate-800/50 hover:bg-cyan-600/80 text-cyan-400 hover:text-white p-1.5 pl-0.5 rounded-l-xl border border-r-0 border-slate-700 transition-all group shadow-lg backdrop-blur-sm items-center justify-center"
+                title="Contraer Panel"
+              >
+                <ChevronRight size={24} className="group-hover:translate-x-0.5 transition-transform shrink-0" />
+              </button>
+            )}
 
             <div className="flex items-center gap-2">
               <div className="relative flex-1">

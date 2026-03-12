@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, RotateCcw, Trophy, Hash, History, LayoutGrid, Eye, X, Star, Gift, CheckCircle, Circle, PauseCircle, PlayCircle, Lock, Ticket } from 'lucide-react';
+import { Play, RotateCcw, Trophy, Hash, History, LayoutGrid, Eye, X, Star, Gift, CheckCircle, Circle, PauseCircle, PlayCircle, Lock, Ticket, ChevronRight } from 'lucide-react';
 import { PatternKey, WinPattern, Prize, Winner } from '../types.ts';
 import { WIN_PATTERNS } from '../utils/helpers.ts';
+import Modal from './Modal.tsx';
 
 interface Props {
   drawnBalls: number[];
@@ -119,6 +120,8 @@ const GamePanel: React.FC<Props> = ({
   const [currentBall, setCurrentBall] = useState<number | string>('—');
   const [isAnimating, setIsAnimating] = useState(false);
   const [showPatternPreview, setShowPatternPreview] = useState(false);
+  const [showMobilePrizes, setShowMobilePrizes] = useState(false);
+  const [showMobileWinners, setShowMobileWinners] = useState(false);
   const lastBall = drawnBalls[drawnBalls.length - 1];
 
   // Ref para evitar que el modal se abra en la carga inicial
@@ -315,12 +318,54 @@ const GamePanel: React.FC<Props> = ({
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-4 relative z-10">
-          <div>
-            <h2 className="text-lg 2xl:text-3xl font-bold text-white flex items-center gap-2 mb-0.5">
-              <Trophy className="text-amber-500 w-5 h-5 2xl:w-8 2xl:h-8" />
-              Sorteo
-            </h2>
-            <div className="text-[12px] text-slate-500">Progreso: <span className="text-slate-300 font-mono">{drawnBalls.length} / 75</span></div>
+          <div className="flex items-center justify-between w-full sm:w-auto">
+            <div className="flex flex-col">
+              <h2 className="text-lg 2xl:text-3xl font-bold text-white flex items-center gap-2 mb-0.5">
+                <Trophy className="text-amber-500 w-5 h-5 2xl:w-8 2xl:h-8" />
+                Sorteo
+              </h2>
+              <div className="flex flex-col gap-1.5 mt-1 min-w-[140px] sm:min-w-[200px]">
+                <div className="flex justify-between items-center text-[10px] uppercase font-black tracking-widest">
+                  <span className="text-slate-500">Bolillas Extraídas</span>
+                  <span className="text-cyan-400 font-mono text-sm">{drawnBalls.length}<span className="text-slate-600">/75</span></span>
+                </div>
+                <div className="h-2 w-full bg-slate-950 rounded-full border border-slate-800 p-0.5 shadow-[inset_0_1px_4px_rgba(0,0,0,0.8)] overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-cyan-600 via-blue-500 to-indigo-500 rounded-full transition-all duration-1000 ease-out relative"
+                    style={{ width: `${(drawnBalls.length / 75) * 100}%` }}
+                  >
+                    {/* Interior glow effect */}
+                    <div className="absolute inset-0 bg-white/20 blur-[1px]"></div>
+                    {/* Animated shine */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Actions Overlay (Premios y Ganadores) */}
+            <div className="flex items-center gap-2 lg:hidden">
+              {prizes.length > 0 && (
+                <button
+                  onClick={() => setShowMobilePrizes(true)}
+                  className="p-2 sm:p-2.5 bg-slate-800/80 border border-slate-700 text-amber-500 rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-2"
+                  title="Ver Premios"
+                >
+                  <Gift size={18} />
+                  <span className="text-[10px] font-black uppercase tracking-wider hidden xs:block">Premios</span>
+                </button>
+              )}
+              {winners.length > 0 && (
+                <button
+                  onClick={() => setShowMobileWinners(true)}
+                  className="p-2 sm:p-2.5 bg-slate-800/80 border border-slate-700 text-emerald-400 rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-2"
+                  title="Ver Ganadores"
+                >
+                  <Trophy size={18} />
+                  <span className="text-[10px] font-black uppercase tracking-wider hidden xs:block">Ganadores</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-1 w-full sm:w-auto">
@@ -503,7 +548,7 @@ const GamePanel: React.FC<Props> = ({
 
           {/* Lista de Ganadores (Derecha) - DISEÑO COMPACTO SEGÚN REFERENCIA */}
           {winners.length > 0 && (
-            <div className="absolute right-0 top-0 bottom-0 z-20 w-80 xl:w-96 hidden lg:flex flex-col gap-0 py-4 pr-4 pl-2">
+            <div className="absolute right-0 top-0 bottom-0 z-20 w-96 xl:w-[420px] hidden lg:flex flex-col gap-0 py-4 pr-4 pl-2">
               
               {/* Header Compacto */}
               <div className="flex items-center gap-3 px-4 py-3 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-t-2xl shadow-xl">
@@ -685,6 +730,134 @@ const GamePanel: React.FC<Props> = ({
           </div>
         </div>
       </div>
+      {/* Modal de Premios para Móvil */}
+      <Modal
+        isOpen={showMobilePrizes}
+        onClose={() => setShowMobilePrizes(false)}
+        title={
+          <div className="flex items-center gap-3">
+            <div className="p-1.5 bg-amber-500/10 rounded-lg border border-amber-500/20">
+              <Gift size={20} className="text-amber-500" />
+            </div>
+            <span className="text-white font-black tracking-tight uppercase">Lista de Premios</span>
+          </div>
+        }
+        fullScreenMobile
+        maxWidth="max-w-md"
+      >
+        <div className="flex flex-col gap-3 p-2 h-full overflow-y-auto custom-scrollbar">
+          {prizes.map((p, idx) => ({ ...p, originalIndex: idx }))
+            .sort((a, b) => {
+              if (a.isAwarded && !b.isAwarded) return 1;
+              if (!a.isAwarded && b.isAwarded) return -1;
+              return a.originalIndex - b.originalIndex;
+            })
+            .map((prize) => {
+              const activePrizeIndex = prizes.findIndex(p => !p.isAwarded);
+              const isNext = prize.originalIndex === activePrizeIndex;
+              const textLen = prize.description.length;
+              let dynamicFontSize = isNext ? (textLen <= 10 ? 'text-2xl' : 'text-xl') : 'text-sm';
+
+              return (
+                <div
+                  key={prize.id}
+                  className={`
+                    relative rounded-2xl transition-all duration-300 border
+                    ${prize.isAwarded
+                      ? 'bg-slate-900/50 border-emerald-900/30 opacity-60'
+                      : isNext
+                        ? 'bg-gradient-to-br from-amber-500/20 to-orange-600/20 border-amber-500/50 shadow-lg'
+                        : 'bg-slate-800/40 border-slate-700'
+                    }
+                  `}
+                >
+                  <div className="p-4 flex items-center gap-4">
+                    <div className={`
+                      flex-shrink-0 flex items-center justify-center rounded-xl backdrop-blur-md
+                      ${isNext ? 'w-14 h-14 bg-amber-500 text-white shadow-lg' : prize.isAwarded ? 'w-12 h-12 bg-emerald-950 text-emerald-500' : 'w-12 h-12 bg-slate-800 text-slate-500'}
+                    `}>
+                      {prize.isAwarded ? <CheckCircle size={24} /> : <Gift size={isNext ? 32 : 24} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-[10px] uppercase font-black tracking-widest ${isNext ? 'text-amber-400' : 'text-slate-500'}`}>
+                          {prize.name}
+                        </span>
+                        {isNext && <span className="bg-amber-500 text-[8px] font-black text-white px-2 py-0.5 rounded-full animate-pulse">PRÓXIMO</span>}
+                      </div>
+                      <div className={`font-black tracking-tight ${dynamicFontSize} ${isNext ? 'text-white' : prize.isAwarded ? 'text-slate-500 line-through' : 'text-slate-300'}`}>
+                        {prize.description}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      </Modal>
+
+      {/* Modal de Ganadores para Móvil */}
+      <Modal
+        isOpen={showMobileWinners}
+        onClose={() => setShowMobileWinners(false)}
+        title={
+          <div className="flex items-center gap-3">
+            <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+              <Trophy size={20} className="text-emerald-500" />
+            </div>
+            <span className="text-white font-black tracking-tight uppercase">Ganadores en Vivo</span>
+          </div>
+        }
+        fullScreenMobile
+        maxWidth="max-w-md"
+      >
+        <div className="flex flex-col gap-3 p-2 h-full overflow-y-auto custom-scrollbar">
+          {[...winners].reverse().map((winner, idx) => (
+            <div 
+              key={`${winner.participantId}-${winner.cardId}-${idx}`}
+              onClick={() => {
+                onViewWinner && onViewWinner(winner);
+                setShowMobileWinners(false);
+              }}
+              className="bg-slate-900/80 border border-slate-800 rounded-2xl flex items-stretch overflow-hidden active:scale-[0.98] transition-all"
+            >
+              <div className="w-20 bg-gradient-to-b from-amber-400 to-orange-500 p-2 flex flex-col items-center justify-center text-center">
+                <span className="text-[8px] font-black text-black/60 uppercase mb-1 leading-none">PREMIO</span>
+                <span className="text-xs font-black text-black leading-tight">
+                  {winner.prizeDescription || winner.prizeName || 'Bingo'}
+                </span>
+              </div>
+              <div className="flex-1 p-3 min-w-0">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-white font-bold text-sm truncate pr-2">{winner.participantName}</h4>
+                  <span className="text-[9px] text-slate-500 font-mono">{new Date(winner.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="px-2 py-1 rounded-lg bg-slate-950 border border-slate-800 flex items-center gap-1.5">
+                    <Ticket size={10} className="text-emerald-500" />
+                    <span className="text-[10px] font-mono text-emerald-400 font-bold">{winner.cardId}</span>
+                  </div>
+                  <div className="px-2 py-1 rounded-lg bg-slate-950 border border-slate-800 flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-full bg-amber-500 text-[9px] flex items-center justify-center text-black font-black">
+                      {winner.winningNumber}
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Bola</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center px-3">
+                <ChevronRight size={18} className="text-slate-600" />
+              </div>
+            </div>
+          ))}
+          {winners.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-600 italic">
+              <Trophy size={48} className="opacity-10 mb-4" />
+              <p>Esperando primer ganador...</p>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

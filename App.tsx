@@ -195,12 +195,19 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('bingo_auth');
-    // Opcional: limpiar datos sensibles de la memoria
-    // setParticipants([]);
-    // setWinners([]);
+  const handleLogout = async () => {
+    const confirmed = await showConfirm({
+      title: 'Cerrar Sesión',
+      message: '¿Estás seguro de que deseas salir del sistema?',
+      type: 'warning',
+      confirmText: 'Sí, salir',
+      cancelText: 'Cancelar'
+    });
+
+    if (confirmed) {
+      setIsAuthenticated(false);
+      sessionStorage.removeItem('bingo_auth');
+    }
   };
 
   const loadFromCloud = async (silent: boolean = false) => {
@@ -1251,7 +1258,7 @@ const App: React.FC = () => {
         className={`fixed top-0 right-0 h-full bg-slate-900 border-l border-slate-800 shadow-2xl z-[100] transition-all duration-500 ease-in-out ${isParticipantsDrawerOpen ? 'w-full md:w-1/3 translate-x-0' : 'w-0 translate-x-full'}`}
       >
         {isParticipantsDrawerOpen && (
-          <div className="h-full w-full overflow-hidden flex flex-col">
+          <div className="h-full w-full flex flex-col">
             <ParticipantsPanel
               participants={participants}
               drawnBalls={gameState.drawnBalls}
@@ -1316,7 +1323,7 @@ const App: React.FC = () => {
       <Modal
         isOpen={activeManagementModal === 'prizes'}
         onClose={() => setActiveManagementModal('none')}
-        maxWidth="max-w-xl"
+        maxWidth="max-w-4xl"
         noPadding
       >
         <PrizesPanel

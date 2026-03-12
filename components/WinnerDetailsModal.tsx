@@ -258,7 +258,7 @@ const WinnerDetailsModal: React.FC<Props> = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-slate-950/50 px-6 py-4 border-t border-slate-800 flex justify-end items-center gap-4">
+        <div className="bg-slate-950/50 px-6 py-4 border-t border-slate-800 flex justify-center items-center gap-4">
           <button
             onClick={handleToggle}
             disabled={isRetiring}
