@@ -275,6 +275,12 @@ const App: React.FC = () => {
 
               // Marca para omitir subida inútil a la nube porque los datos acaban de bajar de allí
               skipSyncRef.current.gameState = true;
+
+              // Quick fix: Don't overwrite drawnBalls if cloud data is missing, or cloud has fewer balls than local (unless cloud is explicitly reset)
+              if (!cloudGS.drawnBalls || (cloudGS.drawnBalls.length > 0 && cloudGS.drawnBalls.length < prev.drawnBalls.length)) {
+                return { ...cloudGS, drawnBalls: prev.drawnBalls, lastCardSequence: prev.lastCardSequence };
+              }
+              
               return { ...cloudGS, lastCardSequence: prev.lastCardSequence };
             });
           } catch (e) { console.error("Sync GS Error:", e); }
